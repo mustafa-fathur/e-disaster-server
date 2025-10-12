@@ -1,4 +1,79 @@
-<x-layouts.app :title="__('Volunteer Management')">
+<?php
+
+use App\Models\User;
+use App\Enums\UserTypeEnum;
+use App\Enums\UserStatusEnum;
+use Livewire\Attributes\Layout;
+use Livewire\Volt\Component;
+use Livewire\WithPagination;
+
+new #[Layout('components.layouts.app')] class extends Component {
+    use WithPagination;
+
+    public $rejectionReason = '';
+
+    public function with(): array
+    {
+        $volunteers = User::where('type', UserTypeEnum::VOLUNTEER)
+            ->where('status', UserStatusEnum::REGISTERED)
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        $totalVolunteers = User::where('type', UserTypeEnum::VOLUNTEER)->count();
+        $activeVolunteers = User::where('type', UserTypeEnum::VOLUNTEER)
+            ->where('status', UserStatusEnum::ACTIVE)
+            ->count();
+
+        return [
+            'volunteers' => $volunteers,
+            'totalVolunteers' => $totalVolunteers,
+            'activeVolunteers' => $activeVolunteers
+        ];
+    }
+
+    public function approveVolunteer($userId)
+    {
+        $user = User::findOrFail($userId);
+        
+        if ($user->type !== UserTypeEnum::VOLUNTEER || $user->status !== UserStatusEnum::REGISTERED) {
+            session()->flash('error', 'Invalid volunteer status.');
+            return;
+        }
+
+        $user->update(['status' => UserStatusEnum::ACTIVE]);
+        session()->flash('success', 'Volunteer approved successfully.');
+    }
+
+    public function rejectVolunteer($userId)
+    {
+        $user = User::findOrFail($userId);
+        
+        if ($user->type !== UserTypeEnum::VOLUNTEER || $user->status !== UserStatusEnum::REGISTERED) {
+            session()->flash('error', 'Invalid volunteer status.');
+            return;
+        }
+
+        if (empty($this->rejectionReason)) {
+            session()->flash('error', 'Rejection reason is required.');
+            return;
+        }
+
+        $user->update([
+            'status' => UserStatusEnum::INACTIVE,
+            'rejection_reason' => $this->rejectionReason,
+        ]);
+
+        $this->rejectionReason = '';
+        session()->flash('success', 'Volunteer rejected with reason saved.');
+    }
+
+    public function setRejectionReason($reason)
+    {
+        $this->rejectionReason = $reason;
+    }
+}; ?>
+
+<div>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Volunteer Management') }}
@@ -47,7 +122,7 @@
                                 </div>
                                 <div class="ml-4">
                                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Volunteers</p>
-                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ \App\Models\User::where('type', 'volunteer')->count() }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $totalVolunteers }}</p>
                                 </div>
                             </div>
                         </div>
@@ -63,12 +138,13 @@
                                 </div>
                                 <div class="ml-4">
                                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Volunteers</p>
-                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ \App\Models\User::where('type', 'volunteer')->where('status', 'active')->count() }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $activeVolunteers }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
                 <!-- Volunteers Table -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-neutral-200 dark:border-neutral-700">
                     <div class="p-6">
@@ -123,14 +199,12 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div class="flex space-x-2">
-                                                    <form method="POST" action="{{ route('admin.volunteers.approve', $volunteer) }}" class="inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs">
-                                                            Approve
-                                                        </button>
-                                                    </form>
-                                                    <button type="button" onclick="document.getElementById('reject-{{ $volunteer->id }}').showModal()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs">
+                                                    <button wire:click="approveVolunteer('{{ $volunteer->id }}')" 
+                                                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs">
+                                                        Approve
+                                                    </button>
+                                                    <button type="button" onclick="document.getElementById('reject-{{ $volunteer->id }}').showModal()" 
+                                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs">
                                                         Reject
                                                     </button>
                                                 </div>
@@ -145,14 +219,14 @@
                                                 <button class="rounded-md px-2 py-1 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">Close</button>
                                             </div>
                                         </form>
-                                        <form method="POST" action="{{ route('admin.volunteers.reject', $volunteer) }}" class="grid gap-4 p-6">
-                                            @csrf
-                                            @method('PATCH')
+                                        <form wire:submit.prevent="rejectVolunteer('{{ $volunteer->id }}')" class="grid gap-4 p-6">
                                             <label class="text-sm text-neutral-700 dark:text-neutral-300">Reason</label>
-                                            <textarea name="rejection_reason" rows="4" placeholder="Provide a clear reason for rejection" class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-gray-700 dark:text-gray-200" required></textarea>
+                                            <textarea wire:model="rejectionReason" rows="4" placeholder="Provide a clear reason for rejection" 
+                                                      class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-gray-700 dark:text-gray-200" required></textarea>
                                             <div class="flex items-center justify-end gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-700">
-                                                <button type="button" onclick="document.getElementById('reject-{{ $volunteer->id }}').close()" class="rounded-md px-3 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">Cancel</button>
-                                                <button class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700">Reject</button>
+                                                <button type="button" onclick="document.getElementById('reject-{{ $volunteer->id }}').close()" 
+                                                        class="rounded-md px-3 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">Cancel</button>
+                                                <button type="submit" class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700">Reject</button>
                                             </div>
                                         </form>
                                     </dialog>
@@ -183,4 +257,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app>
+</div>

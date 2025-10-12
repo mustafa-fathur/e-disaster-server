@@ -11,8 +11,7 @@
                 $user = auth()->user();
                 $dashboardUrl = match($user->type) {
                     \App\Enums\UserTypeEnum::ADMIN => route('admin.dashboard'),
-                    \App\Enums\UserTypeEnum::OFFICER => route('officer.dashboard'),
-                    default => route('volunteer.dashboard')
+                    default => route('staff.dashboard')
                 };
             @endphp
             <a href="{{ $dashboardUrl }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
@@ -21,17 +20,17 @@
 
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
-                    <flux:navlist.item :href="$dashboardUrl" :current="request()->routeIs('admin.dashboard') || request()->routeIs('officer.dashboard') || request()->routeIs('volunteer.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item :href="route('admin.disasters')" :current="request()->routeIs('admin.disasters*')" wire:navigate>{{ __('Disasters') }}</flux:navlist.item>
+                    <flux:navlist.item :href="$dashboardUrl" :current="request()->routeIs('admin.dashboard') || request()->routeIs('staff.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.disaster')" :current="request()->routeIs('admin.disaster*')" wire:navigate>{{ __('Disasters') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
             @if(auth()->user()->type->value === 'admin')
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('User Management')" class="grid">
-                    <flux:navlist.item :href="route('admin.users')" :current="request()->routeIs('admin.users*')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
-                    <flux:navlist.item :href="route('admin.officers')" :current="request()->routeIs('admin.officers*')" wire:navigate>{{ __('Officers') }}</flux:navlist.item>
-                    <flux:navlist.item :href="route('admin.volunteers')" :current="request()->routeIs('admin.volunteers*')" wire:navigate>{{ __('Volunteers') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.user')" :current="request()->routeIs('admin.user*')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.officer')" :current="request()->routeIs('admin.officer*')" wire:navigate>{{ __('Officers') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.volunteer')" :current="request()->routeIs('admin.volunteer*')" wire:navigate>{{ __('Volunteers') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 

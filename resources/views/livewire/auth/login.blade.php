@@ -53,10 +53,8 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $user = Auth::user();
         if ($user->type === \App\Enums\UserTypeEnum::ADMIN) {
             $this->redirectIntended(default: route('admin.dashboard', absolute: false), navigate: true);
-        } elseif ($user->type === \App\Enums\UserTypeEnum::OFFICER) {
-            $this->redirectIntended(default: route('officer.dashboard', absolute: false), navigate: true);
         } else {
-            $this->redirectIntended(default: route('volunteer.dashboard', absolute: false), navigate: true);
+            $this->redirectIntended(default: route('staff.dashboard', absolute: false), navigate: true);
         }
     }
 

@@ -29,8 +29,7 @@
                             $user = auth()->user();
                             $dashboardUrl = match($user->type) {
                                 \App\Enums\UserTypeEnum::ADMIN => route('admin.dashboard'),
-                                \App\Enums\UserTypeEnum::OFFICER => route('officer.dashboard'),
-                                default => route('volunteer.dashboard')
+                                default => route('staff.dashboard')
                             };
                         @endphp
                         <a

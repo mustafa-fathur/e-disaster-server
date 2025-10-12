@@ -11,11 +11,6 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-// Unified dashboard (role-aware)
-Route::get('dashboard', App\Http\Controllers\DashboardController::class)
-    ->middleware(['auth', 'verified', 'active'])
-    ->name('dashboard');
-
 // Authenticated settings (shared for all roles)
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
@@ -36,37 +31,67 @@ Route::middleware(['auth'])->group(function () {
         ->name('two-factor.show');
 });
 
-
-
-// Admin-only area (no URL prefix; guarded by middleware)
-Route::middleware(['auth', 'active', 'admin'])->group(function () {
-    // Admin Dashboard (also accessible via unified /dashboard)
-    Route::get('/admin-dashboard', [AdminController::class, 'dashboard'])
-        ->name('admin.dashboard.alt');
+// Admin routes with prefix
+Route::prefix('admin')->middleware(['auth', 'active', 'admin'])->group(function () {
+    // Dashboard
+    Route::get('dashboard', function () {
+        $stats = [
+            'total_users' => \App\Models\User::count(),
+            'active_users' => \App\Models\User::where('status', \App\Enums\UserStatusEnum::ACTIVE)->count(),
+            'admin_users' => \App\Models\User::where('type', \App\Enums\UserTypeEnum::ADMIN)->count(),
+            'officer_users' => \App\Models\User::where('type', \App\Enums\UserTypeEnum::OFFICER)->count(),
+            'volunteer_users' => \App\Models\User::where('type', \App\Enums\UserTypeEnum::VOLUNTEER)->count(),
+            'registered_volunteers' => \App\Models\User::where('type', \App\Enums\UserTypeEnum::VOLUNTEER)
+                ->where('status', \App\Enums\UserStatusEnum::REGISTERED)
+                ->count(),
+        ];
+        
+        return view('admin.dashboard', compact('stats'));
+    })->name('admin.dashboard');
 
     // User Management
-    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
-    Route::patch('/users/{user}/status', [AdminController::class, 'updateUserStatus'])->name('admin.users.status');
+    Route::get('users', [AdminController::class, 'users'])->name('admin.users');
+    Route::patch('users/{user}/status', [AdminController::class, 'updateUserStatus'])->name('admin.users.status');
 
     // Volunteer Management
-    Route::get('/volunteers', [AdminController::class, 'volunteers'])->name('admin.volunteers');
-    Route::patch('/volunteers/{user}/approve', [AdminController::class, 'approveVolunteer'])->name('admin.volunteers.approve');
-    Route::patch('/volunteers/{user}/reject', [AdminController::class, 'rejectVolunteer'])->name('admin.volunteers.reject');
+    Route::get('volunteers', [AdminController::class, 'volunteers'])->name('admin.volunteers');
+    Route::patch('volunteers/{user}/approve', [AdminController::class, 'approveVolunteer'])->name('admin.volunteers.approve');
+    Route::patch('volunteers/{user}/reject', [AdminController::class, 'rejectVolunteer'])->name('admin.volunteers.reject');
 
-    // Officer Management (forms handled via modals on index)
-    Route::get('/officers', [AdminController::class, 'officers'])->name('admin.officers');
-    Route::post('/officers', [AdminController::class, 'storeOfficer'])->name('admin.officers.store');
-    Route::patch('/officers/{user}', [AdminController::class, 'updateOfficer'])->name('admin.officers.update');
-    Route::delete('/officers/{user}', [AdminController::class, 'destroyOfficer'])->name('admin.officers.destroy');
+    // Officer Management
+    Route::get('officers', [AdminController::class, 'officers'])->name('admin.officers');
+    Route::post('officers', [AdminController::class, 'storeOfficer'])->name('admin.officers.store');
+    Route::patch('officers/{user}', [AdminController::class, 'updateOfficer'])->name('admin.officers.update');
+    Route::delete('officers/{user}', [AdminController::class, 'destroyOfficer'])->name('admin.officers.destroy');
     
     // Disasters
-    Route::get('/disasters', [DisasterController::class, 'index'])->name('admin.disasters');
-    Route::get('/disasters/create', [DisasterController::class, 'create'])->name('admin.disasters.create');
-    Route::post('/disasters', [DisasterController::class, 'store'])->name('admin.disasters.store');
-    Route::get('/disasters/{disaster}', [DisasterController::class, 'show'])->name('admin.disasters.show');
-    Route::get('/disasters/{disaster}/edit', [DisasterController::class, 'edit'])->name('admin.disasters.edit');
-    Route::patch('/disasters/{disaster}', [DisasterController::class, 'update'])->name('admin.disasters.update');
-    Route::delete('/disasters/{disaster}', [DisasterController::class, 'destroy'])->name('admin.disasters.destroy');
+    Route::get('disasters', [DisasterController::class, 'index'])->name('admin.disasters');
+    Route::get('disasters/create', [DisasterController::class, 'create'])->name('admin.disasters.create');
+    Route::post('disasters', [DisasterController::class, 'store'])->name('admin.disasters.store');
+    Route::get('disasters/{disaster}', [DisasterController::class, 'show'])->name('admin.disasters.show');
+    Route::get('disasters/{disaster}/edit', [DisasterController::class, 'edit'])->name('admin.disasters.edit');
+    Route::patch('disasters/{disaster}', [DisasterController::class, 'update'])->name('admin.disasters.update');
+    Route::delete('disasters/{disaster}', [DisasterController::class, 'destroy'])->name('admin.disasters.destroy');
+});
+
+// Officer routes with prefix
+Route::prefix('officer')->middleware(['auth', 'active', 'officer_or_volunteer'])->group(function () {
+    // Dashboard
+    Route::get('dashboard', function () {
+        return view('dashboard');
+    })->name('officer.dashboard');
+    
+    // Add more officer routes here as needed
+});
+
+// Volunteer routes with prefix
+Route::prefix('volunteer')->middleware(['auth', 'active', 'officer_or_volunteer'])->group(function () {
+    // Dashboard
+    Route::get('dashboard', function () {
+        return view('dashboard');
+    })->name('volunteer.dashboard');
+    
+    // Add more volunteer routes here as needed
 });
 
 // Diagnostic test routes (temporary)

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\DisasterAidController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PictureController;
 use App\Http\Controllers\Api\V1\SystemController;
+use App\Http\Controllers\Api\V1\BmkgController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,6 +72,20 @@ Route::prefix('v1')->group(function () {
         Route::get('/disasters/{id}/volunteers', [DisasterController::class, 'getDisasterVolunteers']);
         Route::post('/disasters/{id}/volunteers', [DisasterController::class, 'assignVolunteerToDisaster']);
         Route::delete('/disasters/{id}/volunteers/{volunteerId}', [DisasterController::class, 'removeVolunteerFromDisaster']);
+
+        // BMKG Earthquake Data (General Access)
+        Route::prefix('bmkg')->group(function () {
+            Route::get('/earthquakes', [BmkgController::class, 'getEarthquakeData']);
+            Route::get('/earthquakes/latest', [BmkgController::class, 'getLatestEarthquake']);
+            Route::get('/earthquakes/recent', [BmkgController::class, 'getRecentEarthquakes']);
+            Route::get('/earthquakes/felt', [BmkgController::class, 'getFeltEarthquakes']);
+            
+            // BMKG Sync Endpoints (Store earthquake data as disasters)
+            Route::post('/sync/latest', [BmkgController::class, 'syncLatestEarthquake']);
+            Route::post('/sync/recent', [BmkgController::class, 'syncRecentEarthquakes']);
+            Route::post('/sync/felt', [BmkgController::class, 'syncFeltEarthquakes']);
+            Route::post('/sync/all', [BmkgController::class, 'syncAllEarthquakes']);
+        });
 
     });
 

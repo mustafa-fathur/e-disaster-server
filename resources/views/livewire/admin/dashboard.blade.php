@@ -34,7 +34,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
             <div class="space-y-6">
                 <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/5 dark:bg-gray-800">
-                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Welcome to the Admin Dashboard</h3>
+                    <h3 class="text-base font-semibold text-sky-400 dark:text-neutral-100">Welcome to the Admin Dashboard</h3>
                     <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-300">Monitor key metrics and jump to common management tasks. Use the sidebar to navigate to Users, Officers, and Volunteers.</p>
                 </div>
                 @if (session('success'))

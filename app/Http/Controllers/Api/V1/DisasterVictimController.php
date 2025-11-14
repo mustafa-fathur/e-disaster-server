@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Enums\PictureTypeEnum;
 use App\Models\Disaster;
 use App\Models\DisasterVictim;
 use App\Models\DisasterVolunteer;
@@ -331,7 +332,7 @@ class DisasterVictimController extends Controller
 
         // Get pictures for this victim
         $pictures = Picture::where('foreign_id', $victim->id)
-            ->where('type', 'victim')
+            ->where('type', PictureTypeEnum::DISASTER_VICTIM->value)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($picture) {

@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>e-Disaster</title>
+        <title>@yield('title', config('app.name', 'e-Disaster'))</title>
 
         <link rel="icon" href="/e-disaster-logo.png" sizes="any">
         <link rel="icon" href   ="/e-disaster-logo.png" type="image/png">

@@ -17,6 +17,10 @@ use Illuminate\Routing\Controller as BaseController;
  * )
  * 
  * @OA\Server(
+ *     url="https://e-disaster.fathur.tech/api/v1",
+ *     description="Production Server"
+ * )
+ * @OA\Server(
  *     url="http://localhost:8000/api/v1",
  *     description="Development Server"
  * )

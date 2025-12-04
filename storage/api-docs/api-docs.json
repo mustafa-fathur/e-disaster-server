@@ -17,7 +17,9 @@
     "paths": {
         "/auth/login": {
             "post": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "User login",
                 "description": "Authenticate user and return access token",
                 "operationId": "985cd5203e2d0a820e113f2f4fdb2847",
@@ -26,7 +28,10 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["email", "password"],
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
                                 "properties": {
                                     "email": {
                                         "type": "string",
@@ -147,7 +152,9 @@
         },
         "/auth/register": {
             "post": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "User registration",
                 "description": "Register a new volunteer user (requires admin approval)",
                 "operationId": "8f20688904ee49d0d8739eeb08faf0b1",
@@ -298,7 +305,9 @@
         },
         "/auth/logout": {
             "post": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "User logout",
                 "description": "Logout user and invalidate access token",
                 "operationId": "a05022a34eef599e04fb0a5254375b84",
@@ -345,7 +354,9 @@
         },
         "/me": {
             "get": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Get current user profile",
                 "description": "Get authenticated user's profile information including profile picture",
                 "operationId": "0fadd24761c66bfa1bfdc46dea94c0dd",
@@ -468,7 +479,9 @@
         },
         "/profile": {
             "put": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Update user profile",
                 "description": "Update authenticated user's profile information",
                 "operationId": "34a95a43fbe3c1867c0643d65ac43b36",
@@ -583,7 +596,9 @@
         },
         "/profile/password": {
             "put": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Update user password",
                 "description": "Change authenticated user's password",
                 "operationId": "5bec6de36c7f928fdceb15e31c3b17bd",
@@ -663,7 +678,9 @@
         },
         "/profile/picture": {
             "post": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Upload profile picture",
                 "description": "Upload or update user's profile picture",
                 "operationId": "11825358503a72160457ea05afbb597c",
@@ -672,7 +689,9 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "required": ["image"],
+                                "required": [
+                                    "image"
+                                ],
                                 "properties": {
                                     "image": {
                                         "description": "Image file (max 2MB)",
@@ -758,7 +777,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Delete profile picture",
                 "description": "Delete user's profile picture",
                 "operationId": "6819b1cea225a934624830a98feddde2",
@@ -803,9 +824,451 @@
                 ]
             }
         },
+        "/bmkg/earthquakes": {
+            "get": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Get latest earthquake data from BMKG",
+                "description": "Fetch real-time earthquake data from BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)",
+                "operationId": "135e9816d3be573bd03aaa9cfad42a04",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Type of earthquake data",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "latest",
+                            "enum": [
+                                "latest",
+                                "recent",
+                                "felt"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Earthquake data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Earthquake data retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch earthquake data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to fetch earthquake data from BMKG"
+                                        },
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/earthquakes/latest": {
+            "get": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Get latest single earthquake from BMKG",
+                "description": "Fetch the most recent earthquake data from BMKG",
+                "operationId": "653f62cacbc70896ecdbc5c3aa2bbbfe",
+                "responses": {
+                    "200": {
+                        "description": "Latest earthquake data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Latest earthquake data retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/earthquakes/recent": {
+            "get": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Get recent earthquakes (M 5.0+) from BMKG",
+                "description": "Fetch list of recent earthquakes with magnitude 5.0+ from BMKG",
+                "operationId": "edaa48ffc5a056d1e727c4170633db9f",
+                "responses": {
+                    "200": {
+                        "description": "Recent earthquakes data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Recent earthquakes data retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/earthquakes/felt": {
+            "get": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Get felt earthquakes from BMKG",
+                "description": "Fetch list of earthquakes that were felt by people from BMKG",
+                "operationId": "cef5c5278ca35e5db0d195dd723e345b",
+                "responses": {
+                    "200": {
+                        "description": "Felt earthquakes data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Felt earthquakes data retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/sync/latest": {
+            "post": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Sync latest earthquake from BMKG to database",
+                "description": "Fetch latest earthquake data from BMKG and store it as a disaster in the database",
+                "operationId": "5fcee639063c31abf012f6686a759b40",
+                "responses": {
+                    "200": {
+                        "description": "Latest earthquake synced successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Latest earthquake synced successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to sync earthquake data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to sync latest earthquake"
+                                        },
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/sync/recent": {
+            "post": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Sync recent earthquakes from BMKG to database",
+                "description": "Fetch recent earthquakes (M 5.0+) from BMKG and store them as disasters in the database",
+                "operationId": "9d259fbe07d1ba1c2fa496a7edfdd08b",
+                "responses": {
+                    "200": {
+                        "description": "Recent earthquakes synced successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Synced 5 recent earthquakes. 2 already existed and were skipped."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "stats": {
+                                            "properties": {
+                                                "created": {
+                                                    "type": "integer"
+                                                },
+                                                "skipped": {
+                                                    "type": "integer"
+                                                },
+                                                "total_processed": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/sync/felt": {
+            "post": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Sync felt earthquakes from BMKG to database",
+                "description": "Fetch felt earthquakes from BMKG and store them as disasters in the database",
+                "operationId": "9394ccc60ff0677bcf548666568188d3",
+                "responses": {
+                    "200": {
+                        "description": "Felt earthquakes synced successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Synced 3 felt earthquakes. 1 already existed and was skipped."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "stats": {
+                                            "properties": {
+                                                "created": {
+                                                    "type": "integer"
+                                                },
+                                                "skipped": {
+                                                    "type": "integer"
+                                                },
+                                                "total_processed": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bmkg/sync/all": {
+            "post": {
+                "tags": [
+                    "BMKG"
+                ],
+                "summary": "Sync all earthquake data from BMKG to database",
+                "description": "Fetch all earthquake data (latest, recent, felt) from BMKG and store them as disasters in the database",
+                "operationId": "ae738223a339bc8ebc2566a134414ff8",
+                "responses": {
+                    "200": {
+                        "description": "All earthquake data synced successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Sync completed. Created 8 new disasters, skipped 3 existing ones."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        },
+                                        "summary": {
+                                            "properties": {
+                                                "total_created": {
+                                                    "type": "integer"
+                                                },
+                                                "total_skipped": {
+                                                    "type": "integer"
+                                                },
+                                                "sync_types": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/disasters/{id}/aids": {
             "get": {
-                "tags": ["Aids"],
+                "tags": [
+                    "Aids"
+                ],
                 "summary": "Get disaster aids",
                 "description": "Get paginated list of aids for a specific disaster (assigned users only)",
                 "operationId": "75a3354e963edc3f426bc3e84dabddc0",
@@ -930,7 +1393,9 @@
                 ]
             },
             "post": {
-                "tags": ["Aids"],
+                "tags": [
+                    "Aids"
+                ],
                 "summary": "Create disaster aid record",
                 "description": "Create a new aid record for a specific disaster (assigned users only)",
                 "operationId": "b55685db0bb06b0b57a79913aa985712",
@@ -951,7 +1416,11 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["name", "category", "quantity"],
+                                "required": [
+                                    "name",
+                                    "category",
+                                    "quantity"
+                                ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
@@ -1060,7 +1529,9 @@
         },
         "/disasters/{id}/aids/{aidId}": {
             "get": {
-                "tags": ["Aids"],
+                "tags": [
+                    "Aids"
+                ],
                 "summary": "Get disaster aid details",
                 "description": "Get detailed information about a specific disaster aid (assigned users only)",
                 "operationId": "75913fa52c2bb949188d9b841186b9b3",
@@ -1182,7 +1653,9 @@
                 ]
             },
             "put": {
-                "tags": ["Aids"],
+                "tags": [
+                    "Aids"
+                ],
                 "summary": "Update disaster aid record",
                 "description": "Update a specific disaster aid record (assigned users only)",
                 "operationId": "be845c2b257e5893bb529c083d73cefc",
@@ -1316,7 +1789,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Aids"],
+                "tags": [
+                    "Aids"
+                ],
                 "summary": "Delete disaster aid record",
                 "description": "Delete a specific disaster aid record (assigned users only)",
                 "operationId": "d0a345a135da8ec24da757aeaea7a250",
@@ -1401,7 +1876,9 @@
         },
         "/dashboard": {
             "get": {
-                "tags": ["Disasters"],
+                "tags": [
+                    "Disasters"
+                ],
                 "summary": "Get dashboard data",
                 "description": "Get dashboard statistics and data for authenticated user",
                 "operationId": "08d251d02237747cd46fdf162afc42de",
@@ -1452,7 +1929,9 @@
         },
         "/disasters": {
             "get": {
-                "tags": ["Disasters"],
+                "tags": [
+                    "Disasters"
+                ],
                 "summary": "List all disasters",
                 "description": "Get paginated list of all disasters with optional filtering",
                 "operationId": "69e3053dbb623a0dda47763d0694fa5a",
@@ -1494,7 +1973,11 @@
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "enum": ["ongoing", "completed", "cancelled"],
+                            "enum": [
+                                "ongoing",
+                                "completed",
+                                "cancelled"
+                            ],
                             "example": "ongoing"
                         }
                     },
@@ -1553,7 +2036,9 @@
                 ]
             },
             "post": {
-                "tags": ["Disasters"],
+                "tags": [
+                    "Disasters"
+                ],
                 "summary": "Create new disaster",
                 "description": "Create a new disaster and automatically assign creator as volunteer",
                 "operationId": "2a097c5e8b8502d04ded37d93355b64d",
@@ -1562,7 +2047,11 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["title", "type", "location"],
+                                "required": [
+                                    "title",
+                                    "type",
+                                    "location"
+                                ],
                                 "properties": {
                                     "title": {
                                         "type": "string",
@@ -1589,7 +2078,10 @@
                                     },
                                     "source": {
                                         "type": "string",
-                                        "enum": ["BMKG", "manual"],
+                                        "enum": [
+                                            "BMKG",
+                                            "manual"
+                                        ],
                                         "example": "BMKG"
                                     },
                                     "location": {
@@ -1676,7 +2168,9 @@
         },
         "/disasters/{id}": {
             "get": {
-                "tags": ["Disasters"],
+                "tags": [
+                    "Disasters"
+                ],
                 "summary": "Get disaster details",
                 "description": "Get detailed information about a specific disaster including volunteers and pictures",
                 "operationId": "a84c8b316c8af09a45a239184f35e636",
@@ -1799,7 +2293,9 @@
                 ]
             },
             "put": {
-                "tags": ["Disasters"],
+                "tags": [
+                    "Disasters"
+                ],
                 "summary": "Update disaster",
                 "description": "Update a specific disaster (assigned users only)",
                 "operationId": "b5766b148146f82657da029b6b0b2d0d",
@@ -1846,7 +2342,10 @@
                                     },
                                     "source": {
                                         "type": "string",
-                                        "enum": ["BMKG", "manual"],
+                                        "enum": [
+                                            "BMKG",
+                                            "manual"
+                                        ],
                                         "example": "BMKG"
                                     },
                                     "location": {
@@ -1946,7 +2445,9 @@
         },
         "/disasters/{id}/cancel": {
             "put": {
-                "tags": ["Disasters"],
+                "tags": [
+                    "Disasters"
+                ],
                 "summary": "Cancel disaster",
                 "description": "Cancel a specific disaster with reason (assigned users only)",
                 "operationId": "a9f6381de5ed1d6eb8002bfabd003469",
@@ -1967,7 +2468,9 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["cancelled_reason"],
+                                "required": [
+                                    "cancelled_reason"
+                                ],
                                 "properties": {
                                     "cancelled_reason": {
                                         "description": "Reason for cancelling the disaster",
@@ -2077,7 +2580,9 @@
         },
         "/disasters/{id}/reports": {
             "get": {
-                "tags": ["Reports"],
+                "tags": [
+                    "Reports"
+                ],
                 "summary": "Get disaster reports",
                 "description": "Get paginated list of reports for a specific disaster (assigned users only)",
                 "operationId": "2763be38f854d317c94e1da4fb2261c0",
@@ -2185,7 +2690,9 @@
                 ]
             },
             "post": {
-                "tags": ["Reports"],
+                "tags": [
+                    "Reports"
+                ],
                 "summary": "Create disaster report",
                 "description": "Create a new report for a specific disaster (assigned users only)",
                 "operationId": "d5a72fe7a1ee8880d9d3d3f8267acb78",
@@ -2206,7 +2713,10 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["title", "description"],
+                                "required": [
+                                    "title",
+                                    "description"
+                                ],
                                 "properties": {
                                     "title": {
                                         "type": "string",
@@ -2292,7 +2802,9 @@
         },
         "/disasters/{id}/reports/{reportId}": {
             "get": {
-                "tags": ["Reports"],
+                "tags": [
+                    "Reports"
+                ],
                 "summary": "Get disaster report details",
                 "description": "Get detailed information about a specific disaster report (assigned users only)",
                 "operationId": "5351b4a252d60c60976a39c7b76d34fe",
@@ -2402,7 +2914,9 @@
                 ]
             },
             "put": {
-                "tags": ["Reports"],
+                "tags": [
+                    "Reports"
+                ],
                 "summary": "Update disaster report",
                 "description": "Update a specific disaster report (assigned users only)",
                 "operationId": "8dd4b3992dea2614d707d50ef8651206",
@@ -2513,7 +3027,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Reports"],
+                "tags": [
+                    "Reports"
+                ],
                 "summary": "Delete disaster report",
                 "description": "Delete a specific disaster report (assigned users only)",
                 "operationId": "c68a2f7c25f24dbb84f305c38d8c9d44",
@@ -2598,7 +3114,9 @@
         },
         "/disasters/{id}/victims": {
             "get": {
-                "tags": ["Victims"],
+                "tags": [
+                    "Victims"
+                ],
                 "summary": "Get disaster victims",
                 "description": "Get paginated list of victims for a specific disaster (assigned users only)",
                 "operationId": "87a7083869906261b0585c6881f50c54",
@@ -2721,7 +3239,9 @@
                 ]
             },
             "post": {
-                "tags": ["Victims"],
+                "tags": [
+                    "Victims"
+                ],
                 "summary": "Create disaster victim record",
                 "description": "Create a new victim record for a specific disaster (assigned users only)",
                 "operationId": "0ac8fafa70fb48967163cc6b8e949e9e",
@@ -2742,7 +3262,10 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["name", "status"],
+                                "required": [
+                                    "name",
+                                    "status"
+                                ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
@@ -2853,7 +3376,9 @@
         },
         "/disasters/{id}/victims/{victimId}": {
             "get": {
-                "tags": ["Victims"],
+                "tags": [
+                    "Victims"
+                ],
                 "summary": "Get disaster victim details",
                 "description": "Get detailed information about a specific disaster victim (assigned users only)",
                 "operationId": "a71f160bf4ecb35bafb9847cd063c124",
@@ -2978,7 +3503,9 @@
                 ]
             },
             "put": {
-                "tags": ["Victims"],
+                "tags": [
+                    "Victims"
+                ],
                 "summary": "Update disaster victim record",
                 "description": "Update a specific disaster victim record (assigned users only)",
                 "operationId": "8f44cea81e44d15bb2a62f0ad3cfb83f",
@@ -3114,7 +3641,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Victims"],
+                "tags": [
+                    "Victims"
+                ],
                 "summary": "Delete disaster victim record",
                 "description": "Delete a specific disaster victim record (assigned users only)",
                 "operationId": "25f18550ea5f0d6ecce76e3922d961dc",
@@ -3199,7 +3728,9 @@
         },
         "/notifications": {
             "get": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Get user notifications",
                 "description": "Get paginated list of notifications for authenticated user",
                 "operationId": "7564b1fb0922578d7b397a52738ab77a",
@@ -3294,7 +3825,9 @@
         },
         "/notifications/{id}": {
             "get": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Get notification details",
                 "description": "Get detailed information about a specific notification",
                 "operationId": "7b9656046d9293e26ea9aba4388a2593",
@@ -3382,7 +3915,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Delete notification",
                 "description": "Delete a specific notification",
                 "operationId": "3cce51a2665aa79e1922a943541a83d6",
@@ -3441,7 +3976,9 @@
         },
         "/notifications/{id}/read": {
             "put": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Mark notification as read",
                 "description": "Mark a specific notification as read",
                 "operationId": "9bfd9d36a40cd2022d074da8b540f28d",
@@ -3515,7 +4052,9 @@
         },
         "/notifications/read-all": {
             "put": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Mark all notifications as read",
                 "description": "Mark all user notifications as read",
                 "operationId": "cc9d2dda202d5472b375ce8f2a274899",
@@ -3548,7 +4087,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Delete all read notifications",
                 "description": "Delete all read notifications for the authenticated user",
                 "operationId": "dc2a2ce4aa020d86fb902b4b23997380",
@@ -3583,7 +4124,9 @@
         },
         "/notifications/stats": {
             "get": {
-                "tags": ["Notifications"],
+                "tags": [
+                    "Notifications"
+                ],
                 "summary": "Get notification statistics",
                 "description": "Get notification statistics for the authenticated user",
                 "operationId": "112e774e4bec8233c1639c64fa612942",
@@ -3648,7 +4191,9 @@
         },
         "/pictures/{modelType}/{modelId}": {
             "get": {
-                "tags": ["Pictures"],
+                "tags": [
+                    "Pictures"
+                ],
                 "summary": "Get images for model",
                 "description": "Get all images associated with a specific model",
                 "operationId": "e382df6dbed42ee6a00990f2ffd30550",
@@ -3738,7 +4283,9 @@
                 ]
             },
             "post": {
-                "tags": ["Pictures"],
+                "tags": [
+                    "Pictures"
+                ],
                 "summary": "Upload image",
                 "description": "Upload image for a specific model (disaster, disaster_report, disaster_victim, disaster_aid)",
                 "operationId": "d10ec2d6a2d2ef8c6fd3a2422d65bb47",
@@ -3774,7 +4321,9 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "required": ["image"],
+                                "required": [
+                                    "image"
+                                ],
                                 "properties": {
                                     "image": {
                                         "description": "Image file (max 2MB)",
@@ -3844,7 +4393,9 @@
         },
         "/pictures/{modelType}/{modelId}/{imageId}": {
             "get": {
-                "tags": ["Pictures"],
+                "tags": [
+                    "Pictures"
+                ],
                 "summary": "Get specific image",
                 "description": "Get details of a specific image",
                 "operationId": "7ecacbac80a1d3f9b322a9ad68ec046e",
@@ -3975,7 +4526,9 @@
                 ]
             },
             "put": {
-                "tags": ["Pictures"],
+                "tags": [
+                    "Pictures"
+                ],
                 "summary": "Update image details",
                 "description": "Update metadata for a specific image",
                 "operationId": "755b6b518572a8582845b817b36db30c",
@@ -4115,7 +4668,9 @@
                 ]
             },
             "delete": {
-                "tags": ["Pictures"],
+                "tags": [
+                    "Pictures"
+                ],
                 "summary": "Delete image",
                 "description": "Delete a specific image and its file from storage",
                 "operationId": "a653e397b52b2913b082556efce6d216",
@@ -4215,7 +4770,9 @@
         },
         "/health": {
             "get": {
-                "tags": ["System"],
+                "tags": [
+                    "System"
+                ],
                 "summary": "Health check",
                 "description": "Check API health status",
                 "operationId": "271f1ed10bdfc379a4725ca95ab1a2c0",
@@ -4285,6 +4842,10 @@
         {
             "name": "Pictures",
             "description": "Image upload and management"
+        },
+        {
+            "name": "BMKG",
+            "description": "BMKG"
         }
     ]
 }

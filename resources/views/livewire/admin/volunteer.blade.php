@@ -36,12 +36,15 @@ new #[Layout('components.layouts.app')] class extends Component {
         $user = User::findOrFail($userId);
         
         if ($user->type !== UserTypeEnum::VOLUNTEER || $user->status !== UserStatusEnum::REGISTERED) {
-            session()->flash('error', 'Invalid volunteer status.');
+            session()->flash('error', 'Status relawan tidak valid.');
             return;
         }
 
-        $user->update(['status' => UserStatusEnum::ACTIVE]);
-        session()->flash('success', 'Volunteer approved successfully.');
+        $user->update([
+            'status' => UserStatusEnum::ACTIVE,
+            'approved_at' => now(),
+        ]);
+        session()->flash('success', 'Relawan berhasil disetujui.');
     }
 
     public function rejectVolunteer($userId)
@@ -49,12 +52,12 @@ new #[Layout('components.layouts.app')] class extends Component {
         $user = User::findOrFail($userId);
         
         if ($user->type !== UserTypeEnum::VOLUNTEER || $user->status !== UserStatusEnum::REGISTERED) {
-            session()->flash('error', 'Invalid volunteer status.');
+            session()->flash('error', 'Status relawan tidak valid.');
             return;
         }
 
         if (empty($this->rejectionReason)) {
-            session()->flash('error', 'Rejection reason is required.');
+            session()->flash('error', 'Alasan penolakan wajib diisi.');
             return;
         }
 
@@ -64,197 +67,282 @@ new #[Layout('components.layouts.app')] class extends Component {
         ]);
 
         $this->rejectionReason = '';
-        session()->flash('success', 'Volunteer rejected with reason saved.');
-    }
-
-    public function setRejectionReason($reason)
-    {
-        $this->rejectionReason = $reason;
+        session()->flash('success', 'Relawan ditolak dan alasan telah disimpan.');
     }
 }; ?>
 
-<div>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Volunteer Management') }}
-        </h2>
-    </x-slot>
+<section class="w-full">
+    <div class="relative mb-6">
+        <flux:heading size="xl" level="1">{{ __('Manajemen Relawan') }}</flux:heading>
+        <flux:subheading size="lg" class="mb-6">{{ __('Tinjau dan setujui aplikasi relawan yang menunggu persetujuan.') }}</flux:subheading>
+        <flux:separator variant="subtle" />
+    </div>
 
-    <div class="py-6">
-        <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-            <div class="space-y-6">
-                @if (session('success'))
-                    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-                        {{ session('success') }}
-                    </div>
-                @endif
-                @if (session('error'))
-                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                        {{ session('error') }}
-                    </div>
-                @endif
-
-                <!-- Quick Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-neutral-200 dark:border-neutral-700">
-                        <div class="p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-8 w-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Approval</p>
-                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $volunteers->total() }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-neutral-200 dark:border-neutral-700">
-                        <div class="p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Volunteers</p>
-                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $totalVolunteers }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-neutral-200 dark:border-neutral-700">
-                        <div class="p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Volunteers</p>
-                                    <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $activeVolunteers }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <div class="space-y-6">
+        <!-- Flash Messages -->
+        @if (session('success'))
+            <div role="alert" class="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-green-800 dark:border-green-700 dark:bg-green-900/20 dark:text-green-300">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="text-sm font-medium">{{ session('success') }}</span>
                 </div>
-                
-                <!-- Volunteers Table -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-neutral-200 dark:border-neutral-700">
-                    <div class="p-6">
-                        <div class="mb-4">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                Volunteers Awaiting Approval ({{ $volunteers->total() }})
-                            </h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Review and approve volunteer applications
-                            </p>
-                        </div>
+            </div>
+        @endif
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Volunteer</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Location</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Applied</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    @forelse ($volunteers as $volunteer)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="flex items-center">
-                                                    <div class="flex-shrink-0 h-10 w-10">
-                                                        <div class="h-10 w-10 rounded-full bg-green-300 dark:bg-green-600 flex items-center justify-center">
-                                                            <span class="text-sm font-medium text-green-700 dark:text-green-300">
-                                                                {{ strtoupper(substr($volunteer->name, 0, 2)) }}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="ml-4">
-                                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $volunteer->name }}</div>
-                                                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ $volunteer->email }}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                                {{ $volunteer->location ?? 'Not provided' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {{ $volunteer->created_at->format('M d, Y H:i') }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                    {{ ucfirst($volunteer->status->value) }}
+        @if (session('error'))
+            <div role="alert" class="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="text-sm font-medium">{{ session('error') }}</span>
+                </div>
+            </div>
+        @endif
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div class="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Menunggu Persetujuan</p>
+                <p class="mt-2 text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ $volunteers->total() }}</p>
+            </div>
+
+            <div class="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Relawan</p>
+                <p class="mt-2 text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ $totalVolunteers }}</p>
+            </div>
+
+            <div class="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Relawan Aktif</p>
+                <p class="mt-2 text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ $activeVolunteers }}</p>
+            </div>
+        </div>
+        <!-- Volunteers Table -->
+        <div class="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto divide-y divide-zinc-200 dark:divide-zinc-700">
+                    <thead class="bg-zinc-50 dark:bg-zinc-800/40">
+                        <tr>
+                            <th class="sticky left-0 z-10 bg-zinc-50 px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-800/40 dark:text-zinc-200">Relawan</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">NIK</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Telepon</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Lokasi</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Terdaftar</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-900">
+                        @forelse ($volunteers as $volunteer)
+                            <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
+                                <td class="whitespace-nowrap px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-green-200 text-green-700 dark:bg-green-700 dark:text-green-200">
+                                                <span class="text-sm font-semibold">
+                                                    {{ strtoupper(substr($volunteer->name, 0, 2)) }}
                                                 </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div class="flex space-x-2">
-                                                    <button wire:click="approveVolunteer('{{ $volunteer->id }}')" 
-                                                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs">
-                                                        Approve
-                                                    </button>
-                                                    <button type="button" onclick="document.getElementById('reject-{{ $volunteer->id }}').showModal()" 
-                                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs">
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    
-                                    <!-- Reject Modal -->
-                                    <dialog id="reject-{{ $volunteer->id }}" class="mx-auto w-full max-w-md overflow-hidden rounded-xl bg-white p-0 shadow-xl backdrop:bg-black/40 dark:bg-gray-800">
-                                        <form method="dialog">
-                                            <div class="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700">
-                                                <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Reject Volunteer</h3>
-                                                <button class="rounded-md px-2 py-1 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">Close</button>
                                             </div>
-                                        </form>
-                                        <form wire:submit.prevent="rejectVolunteer('{{ $volunteer->id }}')" class="grid gap-4 p-6">
-                                            <label class="text-sm text-neutral-700 dark:text-neutral-300">Reason</label>
-                                            <textarea wire:model="rejectionReason" rows="4" placeholder="Provide a clear reason for rejection" 
-                                                      class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-gray-700 dark:text-gray-200" required></textarea>
-                                            <div class="flex items-center justify-end gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-700">
-                                                <button type="button" onclick="document.getElementById('reject-{{ $volunteer->id }}').close()" 
-                                                        class="rounded-md px-3 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">Cancel</button>
-                                                <button type="submit" class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700">Reject</button>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->name }}</div>
+                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $volunteer->email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{{ $volunteer->nik ?? '—' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{{ $volunteer->phone ?? '—' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{{ $volunteer->location ?? '—' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
+                                    {{ $volunteer->created_at->format('M d, Y') }}
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                    <button type="button" 
+                                            onclick="document.getElementById('volunteer-details-{{ $volunteer->id }}').showModal()"
+                                            class="mr-2 inline-flex items-center rounded-md px-3 py-1.5 text-blue-700 transition-colors duration-200 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-900/20">Rincian</button>
+                                    <button type="button" 
+                                            onclick="document.getElementById('approve-volunteer-{{ $volunteer->id }}').showModal()"
+                                            class="mr-2 inline-flex items-center rounded-md px-3 py-1.5 text-green-700 transition-colors duration-200 hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/20">Setujui</button>
+                                    <button type="button" 
+                                            onclick="document.getElementById('reject-{{ $volunteer->id }}').showModal()"
+                                            class="inline-flex items-center rounded-md px-3 py-1.5 text-red-700 transition-colors duration-200 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20">Tolak</button>
+                                </td>
+                            </tr>
+                            
+                            <!-- Details Modal -->
+                            <dialog id="volunteer-details-{{ $volunteer->id }}" class="mx-auto w-full max-w-4xl p-0 overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
+                                <form method="dialog">
+                                    <div class="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-700">
+                                        <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Rincian Pendaftaran Relawan</h3>
+                                        <button class="rounded-md px-2 py-1 text-base text-zinc-600 transition-colors duration-200 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">Tutup</button>
+                                    </div>
+                                </form>
+
+                                <div class="grid gap-6 p-6 md:grid-cols-3">
+                                    <!-- Informasi Dasar -->
+                                    <div>
+                                        <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Informasi Dasar</h4>
+                                        <dl class="space-y-3 text-base">
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Nama Lengkap</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->name }}</dd>
                                             </div>
-                                        </form>
-                                    </dialog>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Email</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->email }}</dd>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">NIK</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->nik ?? '—' }}</dd>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Nomor Telepon</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->phone ?? '—' }}</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
 
-                                    @empty
-                                        <tr>
-                                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                <div class="flex flex-col items-center">
-                                                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                                    </svg>
-                                                    <p class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No volunteers awaiting approval</p>
-                                                    <p class="text-sm text-gray-500 dark:text-gray-400">All volunteers have been processed.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                                    <!-- Informasi Pribadi -->
+                                    <div>
+                                        <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Informasi Pribadi</h4>
+                                        <dl class="space-y-3 text-base">
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Alamat</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->address ?? '—' }}</dd>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Jenis Kelamin</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">
+                                                    @if($volunteer->gender === null)
+                                                        —
+                                                    @elseif($volunteer->gender)
+                                                        Perempuan
+                                                    @else
+                                                        Laki-laki
+                                                    @endif
+                                                </dd>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Tanggal Lahir</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->date_of_birth ? $volunteer->date_of_birth->format('d M Y') : '—' }}</dd>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Alasan Bergabung</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->reason_to_join ?? '—' }}</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
 
-                        <!-- Pagination -->
-                        <div class="mt-6">
-                            {{ $volunteers->links() }}
-                        </div>
-                    </div>
-                </div>
+                                    <!-- Lokasi & Aktivitas -->
+                                    <div>
+                                        <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Lokasi & Aktivitas</h4>
+                                        <dl class="space-y-3 text-base">
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Lokasi</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->location ?? '—' }}</dd>
+                                            </div>
+                                            @if($volunteer->lat && $volunteer->long)
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Koordinat</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ number_format($volunteer->lat, 6) }}, {{ number_format($volunteer->long, 6) }}</dd>
+                                            </div>
+                                            @endif
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Terdaftar Pada</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $volunteer->registered_at?->format('d M Y H:i') ?? $volunteer->created_at->format('d M Y H:i') }}</dd>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Status</dt>
+                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">Terdaftar</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </dialog>
+
+                            <!-- Approve Volunteer Modal -->
+                            <dialog id="approve-volunteer-{{ $volunteer->id }}" class="mx-auto w-full max-w-md p-0 overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
+                                <form method="dialog">
+                                    <div class="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-700">
+                                        <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Setujui Relawan</h3>
+                                        <button class="rounded-md px-2 py-1 text-sm text-zinc-600 transition-colors duration-200 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">Tutup</button>
+                                    </div>
+                                </form>
+                                <div class="p-6">
+                                    <div class="mb-4">
+                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="mb-6 text-center">
+                                        <h4 class="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Konfirmasi Setujui Relawan</h4>
+                                        <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                                            Apakah Anda yakin ingin menyetujui aplikasi <strong>{{ $volunteer->name }}</strong>? 
+                                            Relawan ini akan dapat mengakses sistem setelah disetujui.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center justify-center">
+                                        <button type="button" 
+                                                wire:click="approveVolunteer('{{ $volunteer->id }}')"
+                                                onclick="document.getElementById('approve-volunteer-{{ $volunteer->id }}').close()"
+                                                class="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-green-700">
+                                            Setujui
+                                        </button>
+                                    </div>
+                                </div>
+                            </dialog>
+
+                            <!-- Reject Modal -->
+                            <dialog id="reject-{{ $volunteer->id }}" class="mx-auto w-full max-w-md p-0 overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
+                                <form method="dialog">
+                                    <div class="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-700">
+                                        <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Tolak Relawan</h3>
+                                        <button class="rounded-md px-2 py-1 text-sm text-zinc-600 transition-colors duration-200 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">Tutup</button>
+                                    </div>
+                                </form>
+                                <div class="p-6">
+                                    <div class="mb-4">
+                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <form wire:submit.prevent="rejectVolunteer('{{ $volunteer->id }}')" class="space-y-4">
+                                        <div class="mb-6 text-center">
+                                            <h4 class="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Konfirmasi Tolak Relawan</h4>
+                                            <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                                                Apakah Anda yakin ingin menolak aplikasi <strong>{{ $volunteer->name }}</strong>? 
+                                                Berikan alasan penolakan di bawah ini.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Alasan Penolakan</label>
+                                            <textarea wire:model="rejectionReason" rows="4" placeholder="Berikan alasan yang jelas untuk penolakan" 
+                                                      class="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" required></textarea>
+                                        </div>
+                                        <div class="flex items-center justify-center">
+                                            <button type="submit" 
+                                                    onclick="document.getElementById('reject-{{ $volunteer->id }}').close()"
+                                                    class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-red-700">
+                                                Tolak
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </dialog>
+
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Tidak ada relawan yang menunggu persetujuan.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="border-t border-zinc-200 p-4 dark:border-zinc-700">
+                {{ $volunteers->links() }}
             </div>
         </div>
     </div>
-</div>
+</section>

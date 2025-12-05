@@ -21,16 +21,16 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item :href="$dashboardUrl" :current="request()->routeIs('admin.dashboard') || request()->routeIs('staff.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item :href="route('admin.disaster')" :current="request()->routeIs('admin.disaster*')" wire:navigate>{{ __('Disasters') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.disaster')" :current="request()->routeIs('admin.disaster*')" wire:navigate>{{ __('Bencana') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
             @if(auth()->user()->type->value === 'admin')
             <flux:navlist variant="outline">
-                <flux:navlist.group :heading="__('User Management')" class="grid">
-                    <flux:navlist.item :href="route('admin.user')" :current="request()->routeIs('admin.user*')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
-                    <flux:navlist.item :href="route('admin.officer')" :current="request()->routeIs('admin.officer*')" wire:navigate>{{ __('Officers') }}</flux:navlist.item>
-                    <flux:navlist.item :href="route('admin.volunteer')" :current="request()->routeIs('admin.volunteer*')" wire:navigate>{{ __('Volunteers') }}</flux:navlist.item>
+                <flux:navlist.group :heading="__('Manajemen Pengguna')" class="grid">
+                    <flux:navlist.item :href="route('admin.user')" :current="request()->routeIs('admin.user*')" wire:navigate>{{ __('Pengguna') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.officer')" :current="request()->routeIs('admin.officer*')" wire:navigate>{{ __('Petugas') }}</flux:navlist.item>
+                    <flux:navlist.item :href="route('admin.volunteer')" :current="request()->routeIs('admin.volunteer*')" wire:navigate>{{ __('Relawan') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
@@ -80,7 +80,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Pengaturan') }}</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -88,7 +88,7 @@
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
                         <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full" data-test="logout-button">
-                            {{ __('Log Out') }}
+                            {{ __('Keluar') }}
                         </flux:menu.item>
                     </form>
                 </flux:menu>
@@ -130,7 +130,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Pengaturan') }}</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -138,7 +138,7 @@
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
                         <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full" data-test="logout-button">
-                            {{ __('Log Out') }}
+                            {{ __('Keluar') }}
                         </flux:menu.item>
                     </form>
                 </flux:menu>

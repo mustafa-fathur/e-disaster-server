@@ -3,7 +3,7 @@
 
 <title>{{ $title ?? config('app.name') }}</title>
 
-<link rel="icon" href="/e-disaster-logo.pnh" sizes="any">
+<link rel="icon" href="/e-disaster-logo.png" sizes="any">
 <link rel="icon" href="/e-disaster-logo.png">
 
 <link rel="preconnect" href="https://fonts.bunny.net">

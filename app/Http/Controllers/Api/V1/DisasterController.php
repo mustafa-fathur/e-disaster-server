@@ -782,6 +782,47 @@ class DisasterController extends Controller
         ], 200);
     }
 
+        /**
+     * @OA\Get(
+     *     path="/disasters/{id}/volunteer-check",
+     *     summary="Check if the current user is assigned to the disaster",
+     *     description="Checks if the authenticated user is in the disaster_volunteers table for the given disaster.",
+     *     tags={"Disasters"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Disaster ID",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Check successful",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="assigned", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Disaster not found"
+     *     )
+     * )
+     */
+    public function checkVolunteerAssignment(Request $request, $id)
+    {
+        $user = auth('sanctum')->user();
+
+        $isAssigned = DisasterVolunteer::where('disaster_id', $id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        return response()->json([
+            'assigned' => $isAssigned
+        ], 200);
+    }
+
+
     /**
      * Self-assign to disaster (VOLUNTEER FOR THIS DISASTER button)
      */

@@ -26,7 +26,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/health', [SystemController::class, 'health']);
 
     // Public Auth Endpoints
-    Route::prefix('auth')->group(function () {
+    Route::prefix('auth')->group(function () {  
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/register', [AuthController::class, 'register']);
     });
@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
 
         // Disaster Volunteer Management (General Access)
         Route::get('/disasters/{id}/volunteers', [DisasterController::class, 'getDisasterVolunteers']);
+        Route::get('/disasters/{id}/volunteer-check', [DisasterController::class, 'checkVolunteerAssignment']);
         Route::post('/disasters/{id}/volunteers', [DisasterController::class, 'assignVolunteerToDisaster']);
         Route::delete('/disasters/{id}/volunteers/{volunteerId}', [DisasterController::class, 'removeVolunteerFromDisaster']);
 

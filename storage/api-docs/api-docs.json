@@ -10,6 +10,10 @@
     },
     "servers": [
         {
+            "url": "https://e-disaster.fathur.tech/api/v1",
+            "description": "Production Server"
+        },
+        {
             "url": "http://localhost:8000/api/v1",
             "description": "Development Server"
         }
@@ -2569,6 +2573,53 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/disasters/{id}/volunteer-check": {
+            "get": {
+                "tags": [
+                    "Disasters"
+                ],
+                "summary": "Check if the current user is assigned to the disaster",
+                "description": "Checks if the authenticated user is in the disaster_volunteers table for the given disaster.",
+                "operationId": "29916dfa1fd141fda569db4842536490",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Disaster ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "assigned": {
+                                            "type": "boolean",
+                                            "example": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disaster not found"
                     }
                 },
                 "security": [

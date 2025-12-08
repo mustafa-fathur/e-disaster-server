@@ -35,7 +35,8 @@ new class extends Component {
             ->where('type', PictureTypeEnum::PROFILE->value)
             ->first();
 
-        $this->currentProfileUrl = $existing ? Storage::url($existing->file_path) : null;
+        // Resolve URL via public storage symlink
+        $this->currentProfileUrl = $existing ? asset('storage/' . ltrim($existing->file_path, '/')) : null;
     }
 
     /**
@@ -107,8 +108,9 @@ new class extends Component {
             ->first();
 
         if ($existing) {
-            if ($existing->file_path && Storage::exists($existing->file_path)) {
-                Storage::delete($existing->file_path);
+            // Delete from the same disk where we store (public)
+            if ($existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
+                Storage::disk('public')->delete($existing->file_path);
             }
             $existing->delete();
         }
@@ -126,7 +128,7 @@ new class extends Component {
         ]);
 
         // Refresh preview URL and reset upload state
-        $this->currentProfileUrl = Storage::url($storedPath);
+        $this->currentProfileUrl = asset('storage/' . ltrim($storedPath, '/'));
         $this->reset('profile_image');
 
         $this->dispatch('profile-picture-updated');
@@ -144,8 +146,8 @@ new class extends Component {
             ->first();
 
         if ($existing) {
-            if ($existing->file_path && Storage::exists($existing->file_path)) {
-                Storage::delete($existing->file_path);
+            if ($existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
+                Storage::disk('public')->delete($existing->file_path);
             }
             $existing->delete();
         }

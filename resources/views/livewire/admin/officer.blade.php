@@ -30,6 +30,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public $editGender = '';
     public $editDateOfBirth = '';
     public $editPassword = '';
+    public $editPassword_confirmation = '';
     public $editStatus = '';
     public $showEditModal = false;
 
@@ -90,8 +91,8 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->editNik = $officer->nik;
         $this->editPhone = $officer->phone;
         $this->editAddress = $officer->address;
-        $this->editGender = $officer->gender;
-        $this->editDateOfBirth = $officer->date_of_birth ? $officer->date_of_birth->format('Y-m-d') : '';
+        $this->editGender = $officer->gender === null ? '' : ($officer->gender ? '1' : '0');
+        $this->editDateOfBirth = $officer->date_of_birth ? \Carbon\Carbon::parse($officer->date_of_birth)->format('Y-m-d') : '';
         $this->editStatus = $officer->status->value;
         
         $this->dispatch('officer-edited');
@@ -107,7 +108,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             'editNik' => 'required|string|max:45|unique:users,nik,' . $officer->id,
             'editPhone' => 'required|string|max:45',
             'editAddress' => 'required|string',
-            'editGender' => 'required|boolean',
+            'editGender' => 'required|in:0,1',
             'editDateOfBirth' => 'required|date|before:today',
             'editStatus' => 'required|in:active,inactive',
             'editPassword' => 'nullable|string|min:8|confirmed',
@@ -119,7 +120,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             'nik' => $this->editNik,
             'phone' => $this->editPhone,
             'address' => $this->editAddress,
-            'gender' => (bool) $this->editGender,
+            'gender' => (bool) intval($this->editGender),
             'date_of_birth' => $this->editDateOfBirth,
             'status' => $this->editStatus,
         ];
@@ -130,7 +131,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         $officer->update($updateData);
 
-        $this->reset(['editOfficerId', 'editName', 'editEmail', 'editNik', 'editPhone', 'editAddress', 'editGender', 'editDateOfBirth', 'editPassword', 'editStatus']);
+        $this->reset(['editOfficerId', 'editName', 'editEmail', 'editNik', 'editPhone', 'editAddress', 'editGender', 'editDateOfBirth', 'editPassword', 'editPassword_confirmation', 'editStatus']);
         session()->flash('success', 'Petugas berhasil diperbarui.');
     }
 
@@ -143,7 +144,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function cancelEdit()
     {
-        $this->reset(['editOfficerId', 'editName', 'editEmail', 'editNik', 'editPhone', 'editAddress', 'editGender', 'editDateOfBirth', 'editPassword', 'editStatus']);
+        $this->reset(['editOfficerId', 'editName', 'editEmail', 'editNik', 'editPhone', 'editAddress', 'editGender', 'editDateOfBirth', 'editPassword', 'editPassword_confirmation', 'editStatus']);
     }
 
     public function clearFilters()
@@ -209,7 +210,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                         <tr>
                             <th class="sticky left-0 z-10 bg-zinc-50 px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-800/40 dark:text-zinc-200">Petugas</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Lokasi</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Alamat</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Telepon</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Dibuat</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-200">Aksi</th>
@@ -240,15 +241,16 @@ new #[Layout('components.layouts.app')] class extends Component {
                                     </span>
                                 </td>
 
-                                <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{{ $officer->location ?? '—' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{{ $officer->address ?? '—' }}</td>
                                 <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{{ $officer->phone ?? '—' }}</td>
                                 <td class="whitespace-nowrap px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                                     {{ $officer->created_at->format('M d, Y') }}
                                 </td>
 
                                 <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                    <button type="button" 
+                                        <button type="button" 
                                             wire:click="editOfficer('{{ $officer->id }}')"
+                                            onclick="setTimeout(()=>{document.getElementById('officer-edit-modal')?.showModal?.()},100)"
                                             class="mr-2 inline-flex items-center rounded-md px-3 py-1.5 text-blue-700 transition-colors duration-200 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-900/20">Edit</button>
                                     <button type="button" onclick="document.getElementById('delete-officer-{{ $officer->id }}').showModal()" class="inline-flex items-center rounded-md px-3 py-1.5 text-red-700 transition-colors duration-200 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20">Hapus</button>
                                 </td>
@@ -302,8 +304,8 @@ new #[Layout('components.layouts.app')] class extends Component {
         </div>
 
         <!-- Edit Officer Modal -->
-        <dialog id="officer-edit-modal" 
-                class="mx-auto w-full max-w-lg overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
+        <dialog id="officer-edit-modal" wire:ignore
+            class="modal-center mx-auto w-full max-w-lg overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
             <form method="dialog">
                 <div class="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-700">
                     <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Edit Petugas</h3>
@@ -370,7 +372,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         </dialog>
 
         <!-- Create Officer Modal -->
-        <dialog id="officer-create-modal" class="mx-auto w-full max-w-lg overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
+        <dialog id="officer-create-modal" class="modal-center mx-auto w-full max-w-lg overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
             <form method="dialog">
                 <div class="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-700">
                     <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Buat Petugas</h3>
@@ -433,6 +435,12 @@ new #[Layout('components.layouts.app')] class extends Component {
 
 @script
 <script>
+    // Center native <dialog> modals vertically
+    (function(){
+        const style = document.createElement('style');
+        style.innerHTML = `dialog.modal-center[open]{position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%);} dialog.modal-center{border: none;}`;
+        document.head.appendChild(style);
+    })();
     document.addEventListener('livewire:init', () => {
         Livewire.on('officer-edited', () => {
             setTimeout(() => {

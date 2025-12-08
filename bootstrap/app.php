@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsOfficerOrVolunteer;
 use App\Http\Middleware\EnsureUserIsAssignedToDisaster;
 use App\Http\Middleware\EnsureUserCanAccessAPI;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,6 +26,25 @@ return Application::configure(basePath: dirname(__DIR__))
             'disaster_assigned' => EnsureUserIsAssignedToDisaster::class,
             'api_access' => EnsureUserCanAccessAPI::class,
         ]);
+
+        // Trust proxies: make HTTPS/client IP/host detection reliable behind LB/CDN
+        $proxies = env('TRUSTED_PROXIES', '*'); // Prefer listing CIDRs/IPs in production
+        $middleware->trustProxies(
+            at: $proxies,
+            headers: Request::HEADER_X_FORWARDED_FOR
+                   | Request::HEADER_X_FORWARDED_HOST
+                   | Request::HEADER_X_FORWARDED_PORT
+                   | Request::HEADER_X_FORWARDED_PROTO
+                   | Request::HEADER_X_FORWARDED_AWS_ELB
+        );
+
+        // Optional: restrict hosts to prevent host header issues
+        $appHost = env('APP_HOST');
+        if ($appHost) {
+            $middleware->trustHosts([
+                $appHost,
+            ]);
+        }
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

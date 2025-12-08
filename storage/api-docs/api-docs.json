@@ -2582,6 +2582,214 @@
                 ]
             }
         },
+        "/disasters/{id}/volunteers": {
+            "get": {
+                "tags": [
+                    "Disasters"
+                ],
+                "summary": "List disaster volunteers",
+                "description": "Get paginated list of volunteers assigned to a specific disaster",
+                "operationId": "3cd29933960fbf9f50e69854d3d096bd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Disaster ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by volunteer name or email",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "fathur"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Volunteers retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "disaster_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "user_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "user_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "user_email": {
+                                                        "type": "string"
+                                                    },
+                                                    "user_type": {
+                                                        "type": "string"
+                                                    },
+                                                    "user_status": {
+                                                        "type": "string"
+                                                    },
+                                                    "assigned_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disaster not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Disasters"
+                ],
+                "summary": "Self-assign to disaster",
+                "description": "Assign the authenticated user as a volunteer to the specified disaster",
+                "operationId": "ee72649e4d6bba2561615452ad2ecc2c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Disaster ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Successfully volunteered for the disaster",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Successfully volunteered for this disaster."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "disaster_id": {
+                                                    "type": "string"
+                                                },
+                                                "user_id": {
+                                                    "type": "string"
+                                                },
+                                                "user_name": {
+                                                    "type": "string"
+                                                },
+                                                "user_email": {
+                                                    "type": "string"
+                                                },
+                                                "assigned_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disaster not found"
+                    },
+                    "422": {
+                        "description": "Already volunteering for the disaster",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You are already volunteering for this disaster."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/disasters/{id}/volunteer-check": {
             "get": {
                 "tags": [
@@ -2620,6 +2828,78 @@
                     },
                     "404": {
                         "description": "Disaster not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/disasters/{id}/volunteers/{volunteerId}": {
+            "delete": {
+                "tags": [
+                    "Disasters"
+                ],
+                "summary": "Self-unassign from disaster",
+                "description": "Remove the authenticated user from volunteering for the specified disaster",
+                "operationId": "bd48ce451f445f666b7a44ea51e8b755",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Disaster ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "volunteerId",
+                        "in": "path",
+                        "description": "Authenticated user ID (must match)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully stopped volunteering",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Successfully stopped volunteering for this disaster."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disaster not found or not volunteering"
+                    },
+                    "403": {
+                        "description": "Cannot remove other users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You can only remove yourself from volunteering."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [

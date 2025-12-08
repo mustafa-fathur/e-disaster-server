@@ -728,6 +728,66 @@ class DisasterController extends Controller
     /**
      * Get volunteers assigned to a specific disaster
      */
+    /**
+     * @OA\Get(
+     *     path="/disasters/{id}/volunteers",
+     *     summary="List disaster volunteers",
+     *     description="Get paginated list of volunteers assigned to a specific disaster",
+     *     tags={"Disasters"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Disaster ID",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=15)
+     *     ),
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search by volunteer name or email",
+     *         required=false,
+     *         @OA\Schema(type="string", example="fathur")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Volunteers retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="disaster_id", type="string"),
+     *                 @OA\Property(property="user_id", type="string"),
+     *                 @OA\Property(property="user_name", type="string"),
+     *                 @OA\Property(property="user_email", type="string"),
+     *                 @OA\Property(property="user_type", type="string"),
+     *                 @OA\Property(property="user_status", type="string"),
+     *                 @OA\Property(property="assigned_at", type="string", format="date-time")
+     *             )),
+     *             @OA\Property(property="pagination", type="object",
+     *                 @OA\Property(property="current_page", type="integer"),
+     *                 @OA\Property(property="per_page", type="integer"),
+     *                 @OA\Property(property="total", type="integer"),
+     *                 @OA\Property(property="last_page", type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Disaster not found")
+     * )
+     */
     public function getDisasterVolunteers(Request $request, $id)
     {
         $disaster = Disaster::find($id);
@@ -826,6 +886,48 @@ class DisasterController extends Controller
     /**
      * Self-assign to disaster (VOLUNTEER FOR THIS DISASTER button)
      */
+    /**
+     * @OA\Post(
+     *     path="/disasters/{id}/volunteers",
+     *     summary="Self-assign to disaster",
+     *     description="Assign the authenticated user as a volunteer to the specified disaster",
+     *     tags={"Disasters"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Disaster ID",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Successfully volunteered for the disaster",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Successfully volunteered for this disaster."),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string"),
+     *                 @OA\Property(property="disaster_id", type="string"),
+     *                 @OA\Property(property="user_id", type="string"),
+     *                 @OA\Property(property="user_name", type="string"),
+     *                 @OA\Property(property="user_email", type="string"),
+     *                 @OA\Property(property="assigned_at", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Disaster not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Already volunteering for the disaster",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="You are already volunteering for this disaster.")
+     *         )
+     *     )
+     * )
+     */
     public function assignVolunteerToDisaster(Request $request, $id)
     {
         $disaster = Disaster::find($id);
@@ -869,6 +971,44 @@ class DisasterController extends Controller
 
     /**
      * Self-unassign from disaster (STOP VOLUNTEERING button)
+     */
+    /**
+     * @OA\Delete(
+     *     path="/disasters/{id}/volunteers/{volunteerId}",
+     *     summary="Self-unassign from disaster",
+     *     description="Remove the authenticated user from volunteering for the specified disaster",
+     *     tags={"Disasters"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Disaster ID",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="volunteerId",
+     *         in="path",
+     *         description="Authenticated user ID (must match)",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successfully stopped volunteering",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Successfully stopped volunteering for this disaster.")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Disaster not found or not volunteering"),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Cannot remove other users",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="You can only remove yourself from volunteering.")
+     *         )
+     *     )
+     * )
      */
     public function removeVolunteerFromDisaster(Request $request, $id, $volunteerId)
     {

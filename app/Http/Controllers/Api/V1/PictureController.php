@@ -14,8 +14,8 @@ class PictureController extends Controller
     /**
      * @OA\Post(
      *     path="/pictures/{modelType}/{modelId}",
-     *     summary="Upload image",
-     *     description="Upload image for a specific model (disaster, disaster_report, disaster_victim, disaster_aid)",
+     *     summary="Upload images",
+     *     description="Upload one or more images for a specific model (disaster, disaster_report, disaster_victim, disaster_aid). Use multiple files under the `images[]` field.",
      *     tags={"Pictures"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -37,8 +37,13 @@ class PictureController extends Controller
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
      *             @OA\Schema(
-     *                 required={"image"},
-     *                 @OA\Property(property="image", type="string", format="binary", description="Image file (max 2MB)"),
+     *                 required={"images"},
+     *                 @OA\Property(
+     *                     property="images[]",
+     *                     type="array",
+     *                     @OA\Items(type="string", format="binary"),
+     *                     description="One or more image files (max 2MB each)"
+     *                 ),
      *                 @OA\Property(property="caption", type="string", example="Disaster scene photo"),
      *                 @OA\Property(property="alt_text", type="string", example="Photo showing earthquake damage")
      *             )
@@ -46,10 +51,10 @@ class PictureController extends Controller
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Image uploaded successfully",
+     *         description="Images uploaded successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Image uploaded successfully."),
-     *             @OA\Property(property="data", type="object")
+     *             @OA\Property(property="message", type="string", example="Images uploaded successfully."),
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object"))
      *         )
      *     ),
      *     @OA\Response(
@@ -65,7 +70,10 @@ class PictureController extends Controller
     public function uploadImage(Request $request, $modelType, $modelId)
     {
         $validator = Validator::make($request->all(), [
-            'image' => 'required|file|mimes:jpeg,png,jpg,gif|max:2048',
+            // Support both single and multiple file fields
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'file|mimes:jpeg,png,jpg,gif|max:2048',
             'caption' => 'nullable|string|max:255',
             'alt_text' => 'nullable|string|max:255',
         ]);
@@ -95,24 +103,35 @@ class PictureController extends Controller
             ], 404);
         }
 
-        // Handle file upload
-        $file = $request->file('image');
-        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $filePath = $file->storeAs('pictures/' . $modelType, $fileName, 'public');
+        // Normalize to an array of files
+        $files = [];
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+        } elseif ($request->hasFile('image')) {
+            $files = [$request->file('image')];
+        }
 
-        // Create picture record
-        $picture = Picture::create([
-            'foreign_id' => $modelId,
-            'type' => PictureTypeEnum::from($modelType),
-            'caption' => $request->caption,
-            'file_path' => $filePath,
-            'mine_type' => $file->getMimeType(),
-            'alt_text' => $request->alt_text,
-        ]);
+        if (empty($files)) {
+            return response()->json([
+                'message' => 'No image files provided. Use `images[]` for multiple or `image` for single file.'
+            ], 422);
+        }
 
-        return response()->json([
-            'message' => 'Image uploaded successfully.',
-            'data' => [
+        $saved = [];
+        foreach ($files as $file) {
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('pictures/' . $modelType, $fileName, 'public');
+
+            $picture = Picture::create([
+                'foreign_id' => $modelId,
+                'type' => PictureTypeEnum::from($modelType),
+                'caption' => $request->caption,
+                'file_path' => $filePath,
+                'mine_type' => $file->getMimeType(),
+                'alt_text' => $request->alt_text,
+            ]);
+
+            $saved[] = [
                 'id' => $picture->id,
                 'foreign_id' => $picture->foreign_id,
                 'type' => $picture->type->value,
@@ -122,7 +141,12 @@ class PictureController extends Controller
                 'mine_type' => $picture->mine_type,
                 'alt_text' => $picture->alt_text,
                 'created_at' => $picture->created_at->format('Y-m-d H:i:s'),
-            ]
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Images uploaded successfully.',
+            'data' => $saved
         ], 201);
     }
 

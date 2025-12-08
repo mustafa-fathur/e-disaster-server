@@ -140,15 +140,36 @@ class DisasterVictimController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name","status"},
+     *             required={"nik","name","date_of_birth","gender"},
+     *             @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
      *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="age", type="integer", example=35),
+     *             @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
      *             @OA\Property(property="gender", type="boolean", example=true),
-     *             @OA\Property(property="status", type="string", enum={"luka ringan","luka berat","meninggal","hilang"}, example="luka ringan"),
+     *             @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","missing"}, example="minor_injury"),
+     *             @OA\Property(property="contact_info", type="string", example="081234567890"),
      *             @OA\Property(property="description", type="string", example="Victim found trapped under debris"),
-     *             @OA\Property(property="location", type="string", example="Building A, Floor 2"),
-     *             @OA\Property(property="lat", type="number", example=-6.2088),
-     *             @OA\Property(property="long", type="number", example=106.8456)
+     *             @OA\Property(property="is_evacuated", type="boolean", example=false)
+     *         ),
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"nik","name","date_of_birth","gender"},
+     *                 @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
+     *                 @OA\Property(property="name", type="string", example="John Doe"),
+     *                 @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
+     *                 @OA\Property(property="gender", type="boolean", example=true),
+     *                 @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","missing"}, example="minor_injury"),
+     *                 @OA\Property(property="contact_info", type="string", example="081234567890"),
+     *                 @OA\Property(property="description", type="string", example="Victim found trapped under debris"),
+     *                 @OA\Property(property="is_evacuated", type="boolean", example=false),
+     *                 @OA\Property(
+     *                     property="images",
+     *                     type="array",
+     *                     @OA\Items(type="string", format="binary")
+     *                 ),
+     *                 @OA\Property(property="caption", type="string", example="Victim photo"),
+     *                 @OA\Property(property="alt_text", type="string", example="Photo of the victim")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -186,6 +207,22 @@ class DisasterVictimController extends Controller
             ], 404);
         }
 
+        // Normalize Indonesian labels for status if provided
+        $statusLabel = $request->input('status');
+        if ($statusLabel) {
+            $map = [
+                'luka ringan' => 'minor_injury',
+                'ringan' => 'minor_injury',
+                'luka berat' => 'serious_injuries',
+                'berat' => 'serious_injuries',
+                'meninggal' => 'deceased',
+                'md' => 'deceased',
+                'hilang' => 'missing',
+            ];
+            $normalized = $map[strtolower(trim($statusLabel))] ?? $statusLabel;
+            $request->merge(['status' => $normalized]);
+        }
+
         $validator = Validator::make($request->all(), [
             'nik' => 'required|string|max:45',
             'name' => 'required|string|max:45',
@@ -195,6 +232,11 @@ class DisasterVictimController extends Controller
             'description' => 'nullable|string',
             'is_evacuated' => 'nullable|boolean',
             'status' => 'nullable|in:minor_injury,serious_injuries,deceased,missing',
+            // Optional images in multipart
+            'images' => 'sometimes|array',
+            'images.*' => 'file|mimes:jpg,jpeg,png|max:5120',
+            'caption' => 'nullable|string|max:255',
+            'alt_text' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -230,6 +272,23 @@ class DisasterVictimController extends Controller
             'reported_by' => $disasterVolunteer->id,
         ]);
 
+        // Save images if provided
+        $imagesAttached = 0;
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('pictures/disaster_victim', 'public');
+                Picture::create([
+                    'type' => PictureTypeEnum::DISASTER_VICTIM,
+                    'foreign_id' => $victim->id,
+                    'caption' => $request->input('caption'),
+                    'file_path' => $path,
+                    'mine_type' => $file->getClientMimeType(),
+                    'alt_text' => $request->input('alt_text'),
+                ]);
+                $imagesAttached++;
+            }
+        }
+
         return response()->json([
             'message' => 'Disaster victim created successfully.',
             'data' => [
@@ -237,13 +296,14 @@ class DisasterVictimController extends Controller
                 'disaster_id' => $victim->disaster_id,
                 'nik' => $victim->nik,
                 'name' => $victim->name,
-                'date_of_birth' => $victim->date_of_birth->format('Y-m-d'),
+                'date_of_birth' => \Carbon\Carbon::parse($victim->date_of_birth)->format('Y-m-d'),
                 'gender' => $victim->gender,
                 'contact_info' => $victim->contact_info,
                 'description' => $victim->description,
                 'is_evacuated' => $victim->is_evacuated,
                 'status' => $victim->status->value,
                 'reported_by' => $victim->reported_by,
+                'images_attached' => $imagesAttached,
                 'created_at' => $victim->created_at->format('Y-m-d H:i:s'),
             ]
         ], 201);
@@ -354,7 +414,7 @@ class DisasterVictimController extends Controller
                 'disaster_title' => $victim->disaster->title,
                 'nik' => $victim->nik,
                 'name' => $victim->name,
-                'date_of_birth' => $victim->date_of_birth->format('Y-m-d'),
+                'date_of_birth' => \Carbon\Carbon::parse($victim->date_of_birth)->format('Y-m-d'),
                 'gender' => $victim->gender,
                 'contact_info' => $victim->contact_info,
                 'description' => $victim->description,
@@ -487,7 +547,7 @@ class DisasterVictimController extends Controller
                 'disaster_id' => $victim->disaster_id,
                 'nik' => $victim->nik,
                 'name' => $victim->name,
-                'date_of_birth' => $victim->date_of_birth->format('Y-m-d'),
+                'date_of_birth' => \Carbon\Carbon::parse($victim->date_of_birth)->format('Y-m-d'),
                 'gender' => $victim->gender,
                 'contact_info' => $victim->contact_info,
                 'description' => $victim->description,

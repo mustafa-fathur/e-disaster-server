@@ -73,31 +73,10 @@ class DisasterController extends Controller
                 return [
                     'id' => $disaster->id,
                     'title' => $disaster->title,
-                    'type' => $disaster->types->value,
                     'status' => $disaster->status->value,
+                    'type' => $disaster->types->value,
                     'location' => $disaster->location,
-                    'date' => $disaster->date->format('Y-m-d'),
-                    'time' => $disaster->time->format('H:i:s'),
                     'created_at' => $disaster->created_at->format('Y-m-d H:i:s'),
-                ];
-            })
-            ->values();
-
-        // Recent reports from assigned disasters
-        $recentReports = DisasterReport::whereIn('disaster_id', $assignedDisasterIds)
-            ->with('disaster')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get()
-            ->map(function ($report) {
-                return [
-                    'id' => $report->id,
-                    'title' => $report->title,
-                    'description' => $report->description,
-                    'disaster_title' => $report->disaster->title,
-                    'disaster_id' => $report->disaster_id,
-                    'is_final_stage' => $report->is_final_stage,
-                    'created_at' => $report->created_at->format('Y-m-d H:i:s'),
                 ];
             });
 
@@ -377,23 +356,51 @@ class DisasterController extends Controller
      *     description="Create a new disaster and automatically assign creator as volunteer",
      *     tags={"Disasters"},
      *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"title","type","location"},
-     *             @OA\Property(property="title", type="string", example="Earthquake in Jakarta"),
-     *             @OA\Property(property="description", type="string", example="Strong earthquake felt in Jakarta area"),
-     *             @OA\Property(property="type", type="string", enum={"gempa bumi","tsunami","gunung meletus","banjir","kekeringan","angin topan","tahan longsor","bencana non alam","bencana sosial"}, example="gempa bumi"),
-     *             @OA\Property(property="source", type="string", enum={"BMKG","manual"}, example="BMKG"),
-     *             @OA\Property(property="location", type="string", example="Jakarta, Indonesia"),
-     *             @OA\Property(property="lat", type="number", example=-6.2088),
-     *             @OA\Property(property="long", type="number", example=106.8456),
-     *             @OA\Property(property="magnitude", type="number", example=6.5),
-     *             @OA\Property(property="depth", type="number", example=10.5),
-     *             @OA\Property(property="date", type="string", format="date", example="2025-01-15"),
-     *             @OA\Property(property="time", type="string", example="14:30:00")
-     *         )
-     *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\MediaType(
+    *             mediaType="application/json",
+    *             @OA\Schema(
+    *                 required={"title","type","location"},
+    *                 @OA\Property(property="title", type="string", example="Earthquake in Jakarta"),
+    *                 @OA\Property(property="description", type="string", example="Strong earthquake felt in Jakarta area"),
+    *                 @OA\Property(property="type", type="string", enum={"gempa bumi","tsunami","gunung meletus","banjir","kekeringan","angin topan","tahan longsor","bencana non alam","bencana sosial"}, example="gempa bumi"),
+    *                 @OA\Property(property="source", type="string", enum={"BMKG","manual"}, example="BMKG"),
+    *                 @OA\Property(property="location", type="string", example="Jakarta, Indonesia"),
+    *                 @OA\Property(property="lat", type="number", example=-6.2088),
+    *                 @OA\Property(property="long", type="number", example=106.8456),
+    *                 @OA\Property(property="magnitude", type="number", example=6.5),
+    *                 @OA\Property(property="depth", type="number", example=10.5),
+    *                 @OA\Property(property="date", type="string", format="date", example="2025-01-15"),
+    *                 @OA\Property(property="time", type="string", example="14:30:00")
+    *             )
+    *         ),
+    *         @OA\MediaType(
+    *             mediaType="multipart/form-data",
+    *             @OA\Schema(
+    *                 required={"title","type","location"},
+    *                 @OA\Property(property="title", type="string", example="Earthquake in Jakarta"),
+    *                 @OA\Property(property="description", type="string", example="Strong earthquake felt in Jakarta area"),
+    *                 @OA\Property(property="type", type="string", enum={"gempa bumi","tsunami","gunung meletus","banjir","kekeringan","angin topan","tahan longsor","bencana non alam","bencana sosial"}, example="gempa bumi"),
+    *                 @OA\Property(property="source", type="string", enum={"BMKG","manual"}, example="BMKG"),
+    *                 @OA\Property(property="location", type="string", example="Jakarta, Indonesia"),
+    *                 @OA\Property(property="lat", type="number", example=-6.2088),
+    *                 @OA\Property(property="long", type="number", example=106.8456),
+    *                 @OA\Property(property="magnitude", type="number", example=6.5),
+    *                 @OA\Property(property="depth", type="number", example=10.5),
+    *                 @OA\Property(property="date", type="string", format="date", example="2025-01-15"),
+    *                 @OA\Property(property="time", type="string", example="14:30:00"),
+    *                 @OA\Property(
+    *                     property="images[]",
+    *                     type="array",
+    *                     @OA\Items(type="string", format="binary"),
+    *                     description="Optional images to attach to the disaster"
+    *                 ),
+    *                 @OA\Property(property="caption", type="string", example="Disaster scene"),
+    *                 @OA\Property(property="alt_text", type="string", example="Photo showing earthquake damage")
+    *             )
+    *         )
+    *     ),
      *     @OA\Response(
      *         response=201,
      *         description="Disaster created successfully",
@@ -414,7 +421,50 @@ class DisasterController extends Controller
      */
     public function createDisaster(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        // Normalize localized input values to enum keys (accept Indonesian labels)
+        $typeMap = [
+            'gempa bumi' => 'earthquake',
+            'tsunami' => 'tsunami',
+            'gunung meletus' => 'volcanic_eruption',
+            'banjir' => 'flood',
+            'kekeringan' => 'drought',
+            'angin topan' => 'tornado',
+            'tahan longsor' => 'landslide',
+            'tanah longsor' => 'landslide',
+            'bencana non alam' => 'non_natural_disaster',
+            'bencana sosial' => 'social_disaster',
+        ];
+        $sourceMap = [
+            'bmkg' => 'bmkg',
+            'BMKG' => 'bmkg',
+            'bmk' => 'bmkg', // common shorthand accepted
+            'BMK' => 'bmkg',
+            'manual' => 'manual',
+        ];
+        $statusMap = [
+            'berlangsung' => 'ongoing',
+            'selesai' => 'completed',
+            'dibatalkan' => 'cancelled',
+        ];
+
+        $input = $request->all();
+        if (!empty($input['type']) && isset($typeMap[strtolower($input['type'])])) {
+            $input['type'] = $typeMap[strtolower($input['type'])];
+        }
+        if (!empty($input['source'])) {
+            $srcKey = $input['source'];
+            // try exact then lowercase key
+            if (isset($sourceMap[$srcKey])) {
+                $input['source'] = $sourceMap[$srcKey];
+            } elseif (isset($sourceMap[strtolower($srcKey)])) {
+                $input['source'] = $sourceMap[strtolower($srcKey)];
+            }
+        }
+        if (!empty($input['status']) && isset($statusMap[strtolower($input['status'])])) {
+            $input['status'] = $statusMap[strtolower($input['status'])];
+        }
+
+        $validator = Validator::make($input, [
             'title' => 'required|string|max:45',
             'description' => 'nullable|string',
             'source' => 'required|in:bmkg,manual',
@@ -428,6 +478,11 @@ class DisasterController extends Controller
             'long' => 'nullable|numeric|between:-180,180',
             'magnitude' => 'nullable|numeric|min:0',
             'depth' => 'nullable|numeric|min:0',
+            // optional images in same request
+            'images' => 'nullable|array',
+            'images.*' => 'file|image|max:2048',
+            'caption' => 'nullable|string|max:255',
+            'alt_text' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -439,20 +494,22 @@ class DisasterController extends Controller
 
         $user = auth('sanctum')->user();
 
+        $validated = $validator->validated();
+
         $disaster = Disaster::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'source' => DisasterSourceEnum::from($request->source),
-            'types' => DisasterTypeEnum::from($request->type),
-            'status' => DisasterStatusEnum::from($request->status ?? 'ongoing'),
-            'date' => $request->date,
-            'time' => $request->time,
-            'location' => $request->location,
-            'coordinate' => $request->coordinate,
-            'lat' => $request->lat,
-            'long' => $request->long,
-            'magnitude' => $request->magnitude,
-            'depth' => $request->depth,
+            'title' => $validated['title'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'source' => DisasterSourceEnum::from($validated['source']),
+            'types' => DisasterTypeEnum::from($validated['type']),
+            'status' => DisasterStatusEnum::from($validated['status'] ?? 'ongoing'),
+            'date' => $validated['date'] ?? null,
+            'time' => $validated['time'] ?? null,
+            'location' => $validated['location'] ?? null,
+            'coordinate' => $validated['coordinate'] ?? null,
+            'lat' => $validated['lat'] ?? null,
+            'long' => $validated['long'] ?? null,
+            'magnitude' => $validated['magnitude'] ?? null,
+            'depth' => $validated['depth'] ?? null,
             'reported_by' => $user->id,
         ]);
 
@@ -461,6 +518,23 @@ class DisasterController extends Controller
             'disaster_id' => $disaster->id,
             'user_id' => $user->id,
         ]);
+
+        // If images provided, save them now
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $filePath = $file->storeAs('pictures/disaster', $fileName, 'public');
+
+                Picture::create([
+                    'foreign_id' => $disaster->id,
+                    'type' => PictureTypeEnum::DISASTER,
+                    'caption' => $request->caption,
+                    'file_path' => $filePath,
+                    'mine_type' => $file->getMimeType(),
+                    'alt_text' => $request->alt_text,
+                ]);
+            }
+        }
 
         return response()->json([
             'message' => 'Disaster created successfully. You have been automatically assigned as a volunteer.',
@@ -474,6 +548,7 @@ class DisasterController extends Controller
                 'time' => $disaster->time->format('H:i:s'),
                 'created_at' => $disaster->created_at->format('Y-m-d H:i:s'),
                 'auto_assigned' => true,
+                'images_attached' => $request->hasFile('images'),
             ]
         ], 201);
     }

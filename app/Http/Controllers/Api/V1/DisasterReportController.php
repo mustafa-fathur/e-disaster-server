@@ -146,13 +146,28 @@ class DisasterReportController extends Controller
      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f659")
      *     ),
      *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"title","description"},
-     *             @OA\Property(property="title", type="string", example="Damage Assessment Report"),
-     *             @OA\Property(property="description", type="string", example="Detailed report on building damage and casualties"),
-     *             @OA\Property(property="is_final_stage", type="boolean", example=false, description="Mark as final stage (completes disaster)")
-     *         )
+    *         required=true,
+    *         @OA\MediaType(
+    *             mediaType="application/json",
+    *             @OA\Schema(
+    *                 required={"title","description"},
+    *                 @OA\Property(property="title", type="string", example="Damage Assessment Report"),
+    *                 @OA\Property(property="description", type="string", example="Detailed report on building damage and casualties"),
+    *                 @OA\Property(property="is_final_stage", type="boolean", example=false, description="Mark as final stage (completes disaster)")
+    *             )
+    *         ),
+    *         @OA\MediaType(
+    *             mediaType="multipart/form-data",
+    *             @OA\Schema(
+    *                 required={"title","description"},
+    *                 @OA\Property(property="title", type="string", example="Damage Assessment Report"),
+    *                 @OA\Property(property="description", type="string", example="Detailed report on building damage and casualties"),
+    *                 @OA\Property(property="is_final_stage", type="boolean", example=false, description="Mark as final stage (completes disaster)"),
+    *                 @OA\Property(property="images[]", type="array", @OA\Items(type="string", format="binary"), description="Optional images to attach to the report"),
+    *                 @OA\Property(property="caption", type="string", example="Report photo"),
+    *                 @OA\Property(property="alt_text", type="string", example="Photo showing damages")
+    *             )
+    *         )
      *     ),
      *     @OA\Response(
      *         response=201,
@@ -193,6 +208,10 @@ class DisasterReportController extends Controller
             'title' => 'required|string|max:45',
             'description' => 'required|string',
             'is_final_stage' => 'nullable|boolean',
+            'images' => 'nullable|array',
+            'images.*' => 'file|image|max:2048',
+            'caption' => 'nullable|string|max:255',
+            'alt_text' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -223,6 +242,23 @@ class DisasterReportController extends Controller
             'reported_by' => $disasterVolunteer->id, // Reference to disaster_volunteers table
         ]);
 
+        // If images provided, save them now
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $filePath = $file->storeAs('pictures/disaster_report', $fileName, 'public');
+
+                Picture::create([
+                    'foreign_id' => $report->id,
+                    'type' => PictureTypeEnum::DISASTER_REPORT,
+                    'caption' => $request->caption,
+                    'file_path' => $filePath,
+                    'mine_type' => $file->getMimeType(),
+                    'alt_text' => $request->alt_text,
+                ]);
+            }
+        }
+
         // If this is a final stage report, update disaster status to completed
         if ($request->is_final_stage) {
             $disaster->update([
@@ -242,6 +278,7 @@ class DisasterReportController extends Controller
                 'is_final_stage' => $report->is_final_stage,
                 'reported_by' => $report->reported_by,
                 'created_at' => $report->created_at->format('Y-m-d H:i:s'),
+                'images_attached' => $request->hasFile('images'),
             ]
         ], 201);
     }

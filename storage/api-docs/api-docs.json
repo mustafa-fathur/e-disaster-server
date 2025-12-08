@@ -2120,6 +2120,94 @@
                                 },
                                 "type": "object"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "type",
+                                    "location"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Earthquake in Jakarta"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Strong earthquake felt in Jakarta area"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "gempa bumi",
+                                            "tsunami",
+                                            "gunung meletus",
+                                            "banjir",
+                                            "kekeringan",
+                                            "angin topan",
+                                            "tahan longsor",
+                                            "bencana non alam",
+                                            "bencana sosial"
+                                        ],
+                                        "example": "gempa bumi"
+                                    },
+                                    "source": {
+                                        "type": "string",
+                                        "enum": [
+                                            "BMKG",
+                                            "manual"
+                                        ],
+                                        "example": "BMKG"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "Jakarta, Indonesia"
+                                    },
+                                    "lat": {
+                                        "type": "number",
+                                        "example": -6.2088
+                                    },
+                                    "long": {
+                                        "type": "number",
+                                        "example": 106.8456
+                                    },
+                                    "magnitude": {
+                                        "type": "number",
+                                        "example": 6.5
+                                    },
+                                    "depth": {
+                                        "type": "number",
+                                        "example": 10.5
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-01-15"
+                                    },
+                                    "time": {
+                                        "type": "string",
+                                        "example": "14:30:00"
+                                    },
+                                    "images[]": {
+                                        "description": "Optional images to attach to the disaster",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "example": "Disaster scene"
+                                    },
+                                    "alt_text": {
+                                        "type": "string",
+                                        "example": "Photo showing earthquake damage"
+                                    }
+                                },
+                                "type": "object"
+                            }
                         }
                     }
                 },
@@ -3065,6 +3153,46 @@
                                 },
                                 "type": "object"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "description"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Damage Assessment Report"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Detailed report on building damage and casualties"
+                                    },
+                                    "is_final_stage": {
+                                        "description": "Mark as final stage (completes disaster)",
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "images[]": {
+                                        "description": "Optional images to attach to the report",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "example": "Report photo"
+                                    },
+                                    "alt_text": {
+                                        "type": "string",
+                                        "example": "Photo showing damages"
+                                    }
+                                },
+                                "type": "object"
+                            }
                         }
                     }
                 },
@@ -3591,20 +3719,27 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
+                                    "nik",
                                     "name",
-                                    "status"
+                                    "date_of_birth",
+                                    "gender"
                                 ],
                                 "properties": {
+                                    "nik": {
+                                        "type": "string",
+                                        "example": "3173xxxxxxxxxxxx"
+                                    },
                                     "name": {
                                         "type": "string",
                                         "example": "John Doe"
                                     },
-                                    "age": {
-                                        "type": "integer",
-                                        "example": 35
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
                                     },
                                     "gender": {
                                         "type": "boolean",
@@ -3613,28 +3748,91 @@
                                     "status": {
                                         "type": "string",
                                         "enum": [
-                                            "luka ringan",
-                                            "luka berat",
-                                            "meninggal",
-                                            "hilang"
+                                            "minor_injury",
+                                            "serious_injuries",
+                                            "deceased",
+                                            "missing"
                                         ],
-                                        "example": "luka ringan"
+                                        "example": "minor_injury"
+                                    },
+                                    "contact_info": {
+                                        "type": "string",
+                                        "example": "081234567890"
                                     },
                                     "description": {
                                         "type": "string",
                                         "example": "Victim found trapped under debris"
                                     },
-                                    "location": {
+                                    "is_evacuated": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "images": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "caption": {
                                         "type": "string",
-                                        "example": "Building A, Floor 2"
+                                        "example": "Victim photo"
                                     },
-                                    "lat": {
-                                        "type": "number",
-                                        "example": -6.2088
+                                    "alt_text": {
+                                        "type": "string",
+                                        "example": "Photo of the victim"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nik",
+                                    "name",
+                                    "date_of_birth",
+                                    "gender"
+                                ],
+                                "properties": {
+                                    "nik": {
+                                        "type": "string",
+                                        "example": "3173xxxxxxxxxxxx"
                                     },
-                                    "long": {
-                                        "type": "number",
-                                        "example": 106.8456
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
+                                    },
+                                    "gender": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "minor_injury",
+                                            "serious_injuries",
+                                            "deceased",
+                                            "missing"
+                                        ],
+                                        "example": "minor_injury"
+                                    },
+                                    "contact_info": {
+                                        "type": "string",
+                                        "example": "081234567890"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Victim found trapped under debris"
+                                    },
+                                    "is_evacuated": {
+                                        "type": "boolean",
+                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -4617,8 +4815,8 @@
                 "tags": [
                     "Pictures"
                 ],
-                "summary": "Upload image",
-                "description": "Upload image for a specific model (disaster, disaster_report, disaster_victim, disaster_aid)",
+                "summary": "Upload images",
+                "description": "Upload one or more images for a specific model (disaster, disaster_report, disaster_victim, disaster_aid). Use multiple files under the `images[]` field.",
                 "operationId": "d10ec2d6a2d2ef8c6fd3a2422d65bb47",
                 "parameters": [
                     {
@@ -4653,13 +4851,16 @@
                         "multipart/form-data": {
                             "schema": {
                                 "required": [
-                                    "image"
+                                    "images"
                                 ],
                                 "properties": {
-                                    "image": {
-                                        "description": "Image file (max 2MB)",
-                                        "type": "string",
-                                        "format": "binary"
+                                    "images[]": {
+                                        "description": "One or more image files (max 2MB each)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
                                     },
                                     "caption": {
                                         "type": "string",
@@ -4677,17 +4878,20 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Image uploaded successfully",
+                        "description": "Images uploaded successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Image uploaded successfully."
+                                            "example": "Images uploaded successfully."
                                         },
                                         "data": {
-                                            "type": "object"
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
                                         }
                                     },
                                     "type": "object"

@@ -44,8 +44,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/profile/picture', [AuthController::class, 'updateProfilePicture']);
         Route::delete('/profile/picture', [AuthController::class, 'deleteProfilePicture']);
 
-        // Dashboard
+        // My
         Route::get('/dashboard', [DisasterController::class, 'dashboard']);
+        Route::get('/disasters/history', [DisasterController::class, 'getUserDisasterHistory']);
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'getNotifications']);

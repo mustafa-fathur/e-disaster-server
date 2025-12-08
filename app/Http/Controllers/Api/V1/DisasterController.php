@@ -65,20 +65,37 @@ class DisasterController extends Controller
             'total_aids' => DisasterAid::whereIn('disaster_id', $assignedDisasterIds)->count(),
         ];
 
-        // Recent disasters (assigned to user)
-        $recentDisasters = $assignedDisasters
-            ->sortByDesc('created_at')
-            ->take(5)
-            ->map(function ($disaster) {
+        // Recent disasters (assigned to user) + thumbnail picture[] (latest only)
+        $recentAssigned = $assignedDisasters->sortByDesc('created_at')->take(5);
+        $recentIds = $recentAssigned->pluck('id')->all();
+        $recentPics = Picture::whereIn('foreign_id', $recentIds)
+            ->where('type', PictureTypeEnum::DISASTER->value)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy('foreign_id');
+        $recentDisasters = $recentAssigned->map(function ($disaster) use ($recentPics) {
+            $pics = $recentPics->get($disaster->id, collect());
+            $first = $pics->take(1)->map(function ($picture) {
                 return [
-                    'id' => $disaster->id,
-                    'title' => $disaster->title,
-                    'status' => $disaster->status->value,
-                    'type' => $disaster->types->value,
-                    'location' => $disaster->location,
-                    'created_at' => $disaster->created_at->format('Y-m-d H:i:s'),
+                    'id' => $picture->id,
+                    'caption' => $picture->caption,
+                    'file_path' => $picture->file_path,
+                    'url' => \Illuminate\Support\Facades\Storage::url($picture->file_path),
+                    'mine_type' => $picture->mine_type,
+                    'alt_text' => $picture->alt_text,
+                    'created_at' => $picture->created_at->format('Y-m-d H:i:s'),
                 ];
-            });
+            })->values();
+            return [
+                'id' => $disaster->id,
+                'title' => $disaster->title,
+                'status' => $disaster->status->value,
+                'type' => $disaster->types->value,
+                'location' => $disaster->location,
+                'created_at' => $disaster->created_at->format('Y-m-d H:i:s'),
+                'pictures' => $first,
+            ];
+        });
 
         // Recent victims from assigned disasters
         $recentVictims = DisasterVictim::whereIn('disaster_id', $assignedDisasterIds)
@@ -131,7 +148,7 @@ class DisasterController extends Controller
             ],
             'stats' => $stats,
             'recent_disasters' => $recentDisasters,
-            'recent_reports' => $recentReports,
+            'recent_reports' => [],
             'recent_victims' => $recentVictims,
             'recent_aids' => $recentAids,
             'unread_notifications' => $unreadNotifications,
@@ -227,13 +244,142 @@ class DisasterController extends Controller
         $disasters = $query->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
+        // Attach thumbnail picture[] (latest only) to each disaster row
+        $ids = collect($disasters->items())->pluck('id')->all();
+        $picsById = Picture::whereIn('foreign_id', $ids)
+            ->where('type', PictureTypeEnum::DISASTER->value)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy('foreign_id');
+
+        $data = collect($disasters->items())->map(function ($d) use ($picsById) {
+            $pics = $picsById->get($d->id, collect());
+            $first = $pics->take(1)->map(function ($picture) {
+                return [
+                    'id' => $picture->id,
+                    'caption' => $picture->caption,
+                    'file_path' => $picture->file_path,
+                    'url' => \Illuminate\Support\Facades\Storage::url($picture->file_path),
+                    'mine_type' => $picture->mine_type,
+                    'alt_text' => $picture->alt_text,
+                    'created_at' => $picture->created_at->format('Y-m-d H:i:s'),
+                ];
+            })->values();
+            return [
+                'id' => $d->id,
+                'title' => $d->title,
+                'description' => $d->description,
+                'type' => $d->types?->value,
+                'status' => $d->status?->value,
+                'source' => $d->source?->value,
+                'location' => $d->location,
+                'lat' => $d->lat,
+                'long' => $d->long,
+                'date' => $d->date?->format('Y-m-d'),
+                'time' => $d->time?->format('H:i:s'),
+                'created_at' => $d->created_at->format('Y-m-d H:i:s'),
+                'pictures' => $first,
+            ];
+        });
+
         return response()->json([
-            'data' => $disasters->items(),
+            'data' => $data,
             'pagination' => [
                 'current_page' => $disasters->currentPage(),
                 'last_page' => $disasters->lastPage(),
                 'per_page' => $disasters->perPage(),
                 'total' => $disasters->total(),
+                'from' => $disasters->firstItem(),
+                'to' => $disasters->lastItem(),
+            ]
+        ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/disasters/history",
+     *     summary="My disaster history",
+     *     description="Get paginated list of disasters associated with the current user (assigned or reported)",
+     *     tags={"Disasters"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="page", in="query", description="Page number", required=false, @OA\Schema(type="integer", example=1)),
+     *     @OA\Parameter(name="per_page", in="query", description="Items per page", required=false, @OA\Schema(type="integer", example=15)),
+     *     @OA\Parameter(name="status", in="query", description="Filter by status", required=false, @OA\Schema(type="string", enum={"ongoing","completed","cancelled"})),
+     *     @OA\Response(response=200, description="Disaster history retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="pagination", type="object")
+     *         )
+     *     )
+     * )
+     */
+    public function getUserDisasterHistory(Request $request)
+    {
+        $user = auth('sanctum')->user();
+
+        $perPage = (int) $request->get('per_page', 15);
+        $status = $request->get('status');
+
+        // Disasters where user is a volunteer OR reporter
+        $query = Disaster::query()
+            ->where(function ($q) use ($user) {
+                $q->whereHas('volunteers', function ($v) use ($user) {
+                    $v->where('user_id', $user->id);
+                })->orWhere('reported_by', $user->id);
+            });
+
+        if ($status) {
+            $query->where('status', \App\Enums\DisasterStatusEnum::from($status));
+        }
+
+        $disasters = $query->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        // Attach thumbnail picture[] (latest only)
+        $ids = collect($disasters->items())->pluck('id')->all();
+        $picsById = Picture::whereIn('foreign_id', $ids)
+            ->where('type', PictureTypeEnum::DISASTER->value)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy('foreign_id');
+
+        $items = collect($disasters->items())->map(function ($d) use ($picsById) {
+            $pics = $picsById->get($d->id, collect());
+            $first = $pics->take(1)->map(function ($picture) {
+                return [
+                    'id' => $picture->id,
+                    'caption' => $picture->caption,
+                    'file_path' => $picture->file_path,
+                    'url' => \Illuminate\Support\Facades\Storage::url($picture->file_path),
+                    'mine_type' => $picture->mine_type,
+                    'alt_text' => $picture->alt_text,
+                    'created_at' => $picture->created_at->format('Y-m-d H:i:s'),
+                ];
+            })->values();
+            return [
+                'id' => $d->id,
+                'title' => $d->title,
+                'description' => $d->description,
+                'type' => $d->types?->value,
+                'status' => $d->status?->value,
+                'source' => $d->source?->value,
+                'location' => $d->location,
+                'lat' => $d->lat,
+                'long' => $d->long,
+                'date' => $d->date?->format('Y-m-d'),
+                'time' => $d->time?->format('H:i:s'),
+                'created_at' => $d->created_at->format('Y-m-d H:i:s'),
+                'pictures' => $first,
+            ];
+        });
+
+        return response()->json([
+            'data' => $items,
+            'pagination' => [
+                'current_page' => $disasters->currentPage(),
+                'per_page' => $disasters->perPage(),
+                'total' => $disasters->total(),
+                'last_page' => $disasters->lastPage(),
                 'from' => $disasters->firstItem(),
                 'to' => $disasters->lastItem(),
             ]
@@ -325,7 +471,7 @@ class DisasterController extends Controller
                 'source' => $disaster->source->value,
                 'type' => $disaster->types->value,
                 'status' => $disaster->status->value,
-                'date' => $disaster->date->format('Y-m-d'),
+                'date' => \Carbon\Carbon::parse($disaster->date)->format('Y-m-d'),
                 'time' => $disaster->time->format('H:i:s'),
                 'location' => $disaster->location,
                 'coordinate' => $disaster->coordinate,
@@ -544,7 +690,7 @@ class DisasterController extends Controller
                 'type' => $disaster->types->value,
                 'status' => $disaster->status->value,
                 'location' => $disaster->location,
-                'date' => $disaster->date->format('Y-m-d'),
+                'date' => \Carbon\Carbon::parse($disaster->date)->format('Y-m-d'),
                 'time' => $disaster->time->format('H:i:s'),
                 'created_at' => $disaster->created_at->format('Y-m-d H:i:s'),
                 'auto_assigned' => true,
@@ -673,7 +819,7 @@ class DisasterController extends Controller
                 'type' => $disaster->types->value,
                 'status' => $disaster->status->value,
                 'location' => $disaster->location,
-                'date' => $disaster->date->format('Y-m-d'),
+                'date' => \Carbon\Carbon::parse($disaster->date)->format('Y-m-d'),
                 'time' => $disaster->time->format('H:i:s'),
                 'updated_at' => $disaster->updated_at->format('Y-m-d H:i:s'),
             ]

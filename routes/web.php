@@ -31,12 +31,18 @@ Route::middleware(['auth'])->group(function () {
 
 // Admin routes with prefix
 Route::prefix('admin')->middleware(['auth', 'active', 'admin'])->group(function () {
+    // Main Features
     Volt::route('dashboard', 'admin.dashboard')->name('admin.dashboard');
     Volt::route('user', 'admin.user')->name('admin.user');
     Volt::route('volunteer', 'admin.volunteer')->name('admin.volunteer');
     Volt::route('officer', 'admin.officer')->name('admin.officer');
-    Volt::route('disaster', 'admin.disasters')->name('admin.disaster');
-    Volt::route('disaster/{disaster}', 'admin.disaster')->name('admin.disaster.show');
+    Volt::route('disaster', 'admin.disaster')->name('admin.disaster');
+    
+    // Disaster detail sections
+    Volt::route('disaster/{disaster}', 'admin.disaster.identity')->name('admin.disaster.identity');
+    Volt::route('disaster/{disaster}/report', 'admin.disaster.report')->name('admin.disaster.report');
+    Volt::route('disaster/{disaster}/victim', 'admin.disaster.victim')->name('admin.disaster.victim');
+    Volt::route('disaster/{disaster}/aid', 'admin.disaster.aid')->name('admin.disaster.aid');
 });
 
 // Staff routes (officer and volunteer) with prefix

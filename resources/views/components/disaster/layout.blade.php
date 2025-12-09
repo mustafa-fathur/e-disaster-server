@@ -11,8 +11,17 @@
     <flux:separator class="md:hidden" />
 
     <div class="flex-1 self-stretch max-md:pt-6">
-        <flux:heading>{{ $heading ?? '' }}</flux:heading>
-        <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
+        <div class="flex items-start justify-between gap-3 max-w-3xl">
+            <div>
+                <flux:heading>{{ $heading ?? '' }}</flux:heading>
+                <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
+            </div>
+            @if (isset($actions))
+                <div class="shrink-0">
+                    {{ $actions }}
+                </div>
+            @endif
+        </div>
 
         <div class="mt-5 w-full max-w-3xl">
             {{ $slot }}

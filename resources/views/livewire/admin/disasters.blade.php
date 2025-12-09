@@ -400,9 +400,8 @@ new #[Layout('components.layouts.app')] class extends Component {
                                     {{ optional($disaster->date)->format('M d, Y') ?? '—' }}
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                    <button type="button" 
-                                            onclick="document.getElementById('disaster-view-{{ $disaster->id }}').showModal()"
-                                            class="mr-2 inline-flex items-center rounded-md px-3 py-1.5 text-blue-700 transition-colors duration-200 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-900/20">Rincian</button>
+                                                <a href="{{ route('admin.disaster.show', $disaster->id) }}"
+                                                    class="mr-2 inline-flex items-center rounded-md px-3 py-1.5 text-blue-700 transition-colors duration-200 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-900/20">Rincian</a>
                                     <button type="button" 
                                             wire:click="editDisaster('{{ $disaster->id }}')"
                                             onclick="document.getElementById('disaster-edit-{{ $disaster->id }}').showModal()"
@@ -414,112 +413,6 @@ new #[Layout('components.layouts.app')] class extends Component {
                             </tr>
 
                             
-                            <!-- View Disaster Modal -->
-                            <dialog id="disaster-view-{{ $disaster->id }}" class="mx-auto w-full max-w-4xl p-0 overflow-hidden rounded-lg bg-white shadow-xl backdrop:bg-black/40 dark:bg-zinc-900">
-                                <form method="dialog">
-                                    <div class="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-700">
-                                        <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Rincian Bencana</h3>
-                                        <button class="rounded-md px-2 py-1 text-base text-zinc-600 transition-colors duration-200 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">Tutup</button>
-                                    </div>
-                                </form>
-
-                                <div class="grid gap-6 p-6 md:grid-cols-3">
-                                    <!-- Informasi Dasar -->
-                                    <div>
-                                        <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Informasi Dasar</h4>
-                                        <dl class="space-y-3 text-base">
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Judul</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->title }}</dd>
-                                            </div>
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Jenis</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $this->getTypeLabel($disaster->types->value) }}</dd>
-                                            </div>
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Status</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->status->value === 'ongoing' ? 'Berlangsung' : 'Selesai' }}</dd>
-                                            </div>
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Sumber</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $this->getSourceLabel($disaster->source->value) }}</dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-
-                                    <!-- Lokasi & Waktu -->
-                                    <div>
-                                        <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Lokasi & Waktu</h4>
-                                        <dl class="space-y-3 text-base">
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Lokasi</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->location ?? '—' }}</dd>
-                                            </div>
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Tanggal</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ optional($disaster->date)->format('d M Y') ?? '—' }}</dd>
-                                            </div>
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Waktu</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ optional($disaster->time)->format('H:i') ?? '—' }}</dd>
-                                            </div>
-                                            @if($disaster->lat && $disaster->long)
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Koordinat</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ number_format($disaster->lat, 6) }}, {{ number_format($disaster->long, 6) }}</dd>
-                                            </div>
-                                            @endif
-                                            @if($disaster->coordinate)
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Koordinat (String)</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->coordinate }}</dd>
-                                            </div>
-                                            @endif
-                                        </dl>
-                                    </div>
-
-                                    <!-- Detail Teknis -->
-                                    <div>
-                                        <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Detail Teknis</h4>
-                                        <dl class="space-y-3 text-base">
-                                            @if($disaster->magnitude)
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Magnitudo</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->magnitude }}</dd>
-                                            </div>
-                                            @endif
-                                            @if($disaster->depth)
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Kedalaman</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->depth }} km</dd>
-                                            </div>
-                                            @endif
-                                            @if($disaster->description)
-                                            <div class="flex flex-col gap-1">
-                                                <dt class="text-zinc-500 dark:text-zinc-400 text-sm">Deskripsi</dt>
-                                                <dd class="font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->description }}</dd>
-                                            </div>
-                                            @endif
-                                        </dl>
-                                    </div>
-                                </div>
-                                @php $viewPictures = $this->getDisasterPictures($disaster->id); @endphp
-                                @if($viewPictures->count() > 0)
-                                <div class="border-t border-zinc-200 p-6 dark:border-zinc-700">
-                                    <h4 class="mb-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">Gambar</h4>
-                                    <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-                                        @foreach($viewPictures as $picture)
-                                            <div class="relative group">
-                                                <img src="{{ Storage::url($picture->file_path) }}" alt="{{ $picture->alt_text ?? 'Gambar bencana' }}" class="w-full h-32 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" />
-                                                @if($picture->caption)
-                                                    <p class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{{ $picture->caption }}</p>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                                @endif
-                            </dialog>
 
                             
                             <!-- Delete Disaster Modal -->

@@ -36,6 +36,7 @@ Route::prefix('admin')->middleware(['auth', 'active', 'admin'])->group(function 
     Volt::route('volunteer', 'admin.volunteer')->name('admin.volunteer');
     Volt::route('officer', 'admin.officer')->name('admin.officer');
     Volt::route('disaster', 'admin.disasters')->name('admin.disaster');
+    Volt::route('disaster/{disaster}', 'admin.disaster')->name('admin.disaster.show');
 });
 
 // Staff routes (officer and volunteer) with prefix

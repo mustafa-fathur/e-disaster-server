@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\PictureTypeEnum;
 
 class DisasterReport extends Model
 {
@@ -36,6 +37,6 @@ class DisasterReport extends Model
 
     public function pictures()
     {
-        return $this->morphMany(Picture::class, 'foreign_id');
+        return $this->hasMany(Picture::class, 'foreign_id')->where('type', PictureTypeEnum::DISASTER_REPORT);
     }
 }

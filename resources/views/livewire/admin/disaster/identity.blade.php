@@ -10,7 +10,8 @@ new #[Layout('components.layouts.app')] class extends Component {
 
 	public function mount(DisasterModel $disaster)
 	{
-		$this->disaster = $disaster->loadMissing('reporter');
+		// Reporter is a direct relation to User (via reported_by)
+		$this->disaster = $disaster->loadMissing(['reporter']);
 	}
 
 	public function with(): array
@@ -29,20 +30,50 @@ new #[Layout('components.layouts.app')] class extends Component {
 	@include('partials.disaster-heading')
 
 	<x-disaster.layout :heading="__('Identitas Bencana')" :subheading=" __('Kelola rincian identitas bencana')" :disaster="$disaster">
+		@php
+			$typeVal = is_string($disaster->types) ? $disaster->types : ($disaster->types->value ?? null);
+			$typeLabel = match($typeVal) {
+				'earthquake' => __('Gempa Bumi'),
+				'tsunami' => __('Tsunami'),
+				'volcanic_eruption' => __('Letusan Gunung Api'),
+				'flood' => __('Banjir'),
+				'drought' => __('Kekeringan'),
+				'tornado' => __('Angin Puting Beliung'),
+				'landslide' => __('Tanah Longsor'),
+				'non_natural_disaster' => __('Bencana Non-Alam'),
+				'social_disaster' => __('Bencana Sosial'),
+				default => $typeVal,
+			};
+
+			$statusVal = is_string($disaster->status) ? $disaster->status : ($disaster->status->value ?? null);
+			$statusLabel = match($statusVal) {
+				'cancelled' => __('Dibatalkan'),
+				'ongoing' => __('Berlangsung'),
+				'completed' => __('Selesai'),
+				default => $statusVal,
+			};
+
+			$sourceVal = is_string($disaster->source) ? $disaster->source : ($disaster->source->value ?? null);
+			$sourceLabel = match($sourceVal) {
+				'bmkg' => __('BMKG'),
+				'manual' => __('Manual'),
+				default => $sourceVal,
+			};
+		@endphp
 		<div class="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
 			<h3 class="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">{{ $disaster->title }}</h3>
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Jenis</p>
-					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->types->value ?? $disaster->types }}</p>
+					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $typeLabel }}</p>
 				</div>
 				<div>
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Status</p>
-					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->status->value ?? $disaster->status }}</p>
+					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $statusLabel }}</p>
 				</div>
 				<div>
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Sumber</p>
-					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->source->value ?? $disaster->source }}</p>
+					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $sourceLabel }}</p>
 				</div>
 				<div>
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Tanggal</p>
@@ -55,6 +86,10 @@ new #[Layout('components.layouts.app')] class extends Component {
 				<div>
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Lokasi</p>
 					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->location }}</p>
+				</div>
+				<div>
+					<p class="text-xs text-zinc-500 dark:text-zinc-400">Pelapor</p>
+					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->reporter?->name ?? '—' }}</p>
 				</div>
 			</div>
 			@if($disaster->description)

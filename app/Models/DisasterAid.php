@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DisasterAidCategoryEnum;
+use App\Enums\PictureTypeEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,7 @@ class DisasterAid extends Model
 
     public function pictures()
     {
-        return $this->morphMany(Picture::class, 'foreign_id');
+        return $this->hasMany(Picture::class, 'foreign_id')
+            ->where('type', PictureTypeEnum::DISASTER_AID->value);
     }
 }

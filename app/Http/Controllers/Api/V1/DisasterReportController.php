@@ -173,7 +173,7 @@ class DisasterReportController extends Controller
      *         response=201,
      *         description="Report created successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Disaster report created successfully."),
+    *             @OA\Property(property="message", type="string", example="Disaster report created successfully."),
      *             @OA\Property(property="data", type="object")
      *         )
      *     ),

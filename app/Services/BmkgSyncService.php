@@ -62,162 +62,6 @@ class BmkgSyncService
         }
     }
 
-    /**
-     * Sync recent earthquakes (M 5.0+) from BMKG
-     */
-    public function syncRecentEarthquakes(): array
-    {
-        try {
-            $earthquakesData = $this->fetchRecentEarthquakes();
-            
-            if (!$earthquakesData || empty($earthquakesData)) {
-                return [
-                    'success' => false,
-                    'message' => 'No recent earthquake data available from BMKG',
-                    'data' => []
-                ];
-            }
-
-            $createdDisasters = [];
-            $skippedCount = 0;
-
-            foreach ($earthquakesData as $earthquakeData) {
-                // Check if disaster already exists (by coordinates, magnitude, and date)
-                $existingDisaster = $this->findExistingDisaster($earthquakeData);
-                
-                if ($existingDisaster) {
-                    $skippedCount++;
-                    continue;
-                }
-
-                $disaster = $this->createDisasterFromBmkgData($earthquakeData);
-                if ($disaster) {
-                    $createdDisasters[] = $disaster;
-                }
-            }
-
-            return [
-                'success' => true,
-                'message' => sprintf(
-                    'Synced %d recent earthquakes. %d already existed and were skipped.',
-                    count($createdDisasters),
-                    $skippedCount
-                ),
-                'data' => $createdDisasters,
-                'stats' => [
-                    'created' => count($createdDisasters),
-                    'skipped' => $skippedCount,
-                    'total_processed' => count($earthquakesData)
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('BMKG Recent Sync Error: ' . $e->getMessage());
-            
-            return [
-                'success' => false,
-                'message' => 'Failed to sync recent earthquakes: ' . $e->getMessage(),
-                'data' => []
-            ];
-        }
-    }
-
-    /**
-     * Sync felt earthquakes from BMKG
-     */
-    public function syncFeltEarthquakes(): array
-    {
-        try {
-            $earthquakesData = $this->fetchFeltEarthquakes();
-            
-            if (!$earthquakesData || empty($earthquakesData)) {
-                return [
-                    'success' => false,
-                    'message' => 'No felt earthquake data available from BMKG',
-                    'data' => []
-                ];
-            }
-
-            $createdDisasters = [];
-            $skippedCount = 0;
-
-            foreach ($earthquakesData as $earthquakeData) {
-                // Check if disaster already exists
-                $existingDisaster = $this->findExistingDisaster($earthquakeData);
-                
-                if ($existingDisaster) {
-                    $skippedCount++;
-                    continue;
-                }
-
-                $disaster = $this->createDisasterFromBmkgData($earthquakeData);
-                if ($disaster) {
-                    $createdDisasters[] = $disaster;
-                }
-            }
-
-            return [
-                'success' => true,
-                'message' => sprintf(
-                    'Synced %d felt earthquakes. %d already existed and were skipped.',
-                    count($createdDisasters),
-                    $skippedCount
-                ),
-                'data' => $createdDisasters,
-                'stats' => [
-                    'created' => count($createdDisasters),
-                    'skipped' => $skippedCount,
-                    'total_processed' => count($earthquakesData)
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('BMKG Felt Sync Error: ' . $e->getMessage());
-            
-            return [
-                'success' => false,
-                'message' => 'Failed to sync felt earthquakes: ' . $e->getMessage(),
-                'data' => []
-            ];
-        }
-    }
-
-    /**
-     * Sync all earthquake data from BMKG
-     */
-    public function syncAllEarthquakes(): array
-    {
-        $results = [
-            'latest' => $this->syncLatestEarthquake(),
-            'recent' => $this->syncRecentEarthquakes(),
-            'felt' => $this->syncFeltEarthquakes()
-        ];
-
-        $totalCreated = 0;
-        $totalSkipped = 0;
-
-        foreach ($results as $type => $result) {
-            if ($result['success'] && isset($result['stats'])) {
-                $totalCreated += $result['stats']['created'];
-                $totalSkipped += $result['stats']['skipped'];
-            }
-        }
-
-        return [
-            'success' => true,
-            'message' => sprintf(
-                'Sync completed. Created %d new disasters, skipped %d existing ones.',
-                $totalCreated,
-                $totalSkipped
-            ),
-            'data' => $results,
-            'summary' => [
-                'total_created' => $totalCreated,
-                'total_skipped' => $totalSkipped,
-                'sync_types' => array_keys($results)
-            ]
-        ];
-    }
 
     /**
      * Fetch latest earthquake data from BMKG
@@ -239,79 +83,59 @@ class BmkgSyncService
         return $this->formatBmkgData($data['Infogempa']['gempa']);
     }
 
-    /**
-     * Fetch recent earthquakes from BMKG
-     */
-    private function fetchRecentEarthquakes(): array
-    {
-        $response = Http::timeout(10)->get('https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json');
-        
-        if (!$response->successful()) {
-            throw new \Exception("BMKG API returned status: {$response->status()}");
-        }
-
-        $data = $response->json();
-        
-        if (!$data || !isset($data['Infogempa']['gempa'])) {
-            return [];
-        }
-
-        $gempaData = $data['Infogempa']['gempa'];
-        
-        // Handle single earthquake or array of earthquakes
-        if (isset($gempaData['Tanggal'])) {
-            $gempaData = [$gempaData];
-        }
-
-        return array_map([$this, 'formatBmkgData'], $gempaData);
-    }
-
-    /**
-     * Fetch felt earthquakes from BMKG
-     */
-    private function fetchFeltEarthquakes(): array
-    {
-        $response = Http::timeout(10)->get('https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json');
-        
-        if (!$response->successful()) {
-            throw new \Exception("BMKG API returned status: {$response->status()}");
-        }
-
-        $data = $response->json();
-        
-        if (!$data || !isset($data['Infogempa']['gempa'])) {
-            return [];
-        }
-
-        $gempaData = $data['Infogempa']['gempa'];
-        
-        // Handle single earthquake or array of earthquakes
-        if (isset($gempaData['Tanggal'])) {
-            $gempaData = [$gempaData];
-        }
-
-        return array_map([$this, 'formatBmkgData'], $gempaData);
-    }
 
     /**
      * Format BMKG data to standardized format
      */
     private function formatBmkgData(array $earthquake): array
     {
+        $iso = $earthquake['DateTime'] ?? null; // ISO8601 UTC
+        $coordinatesStr = $earthquake['Coordinates'] ?? null; // "-3.35,101.26"
+
+        // Parse Lintang (lat) and Bujur (long) with Indonesian directions
+        $lat = null;
+        $long = null;
+        if (!empty($earthquake['Lintang']) && preg_match('/([\d.]+)\s*(LU|LS)/i', $earthquake['Lintang'], $m)) {
+            $v = (float) $m[1];
+            $lat = strtoupper($m[2]) === 'LS' ? -$v : $v;
+        }
+        if (!empty($earthquake['Bujur']) && preg_match('/([\d.]+)\s*(BT|BB)/i', $earthquake['Bujur'], $m)) {
+            $v = (float) $m[1];
+            $long = strtoupper($m[2]) === 'BB' ? -$v : $v;
+        }
+
+        if (($lat === null || $long === null) && $coordinatesStr && strpos($coordinatesStr, ',') !== false) {
+            [$latStr, $longStr] = array_map('trim', explode(',', $coordinatesStr));
+            if ($lat === null) $lat = (float) $latStr;
+            if ($long === null) $long = (float) $longStr;
+        }
+
+        // Magnitude and depth (strip units like "54 km")
+        $magnitude = isset($earthquake['Magnitude']) ? (float) $earthquake['Magnitude'] : 0.0;
+        $depth = 0.0;
+        if (!empty($earthquake['Kedalaman']) && preg_match('/([\d.]+)/', $earthquake['Kedalaman'], $m)) {
+            $depth = (float) $m[1];
+        }
+
+        $shakemapUrl = null;
+        if (!empty($earthquake['Shakemap'])) {
+            $shakemapUrl = 'https://data.bmkg.go.id/DataMKG/TEWS/' . ltrim($earthquake['Shakemap'], '/');
+        }
+
         return [
             'datetime' => $earthquake['Tanggal'] ?? null,
-            'datetime_utc' => $earthquake['DateTime'] ?? null,
+            'datetime_utc' => $iso,
+            'coordinate_string' => $coordinatesStr,
             'coordinates' => [
-                'latitude' => floatval($earthquake['point']['coordinates'][1] ?? 0),
-                'longitude' => floatval($earthquake['point']['coordinates'][0] ?? 0)
+                'latitude' => $lat,
+                'longitude' => $long,
             ],
-            'magnitude' => floatval($earthquake['Magnitude'] ?? 0),
-            'depth' => floatval($earthquake['Kedalaman'] ?? 0),
+            'magnitude' => $magnitude,
+            'depth' => $depth,
             'region' => $earthquake['Wilayah'] ?? null,
             'tsunami_potential' => $earthquake['Potensi'] ?? null,
             'felt' => $earthquake['Dirasakan'] ?? null,
-            'shakemap_url' => isset($earthquake['Shakemap']) ? 
-                "https://static.bmkg.go.id/{$earthquake['Shakemap']}.jpg" : null
+            'shakemap_url' => $shakemapUrl,
         ];
     }
 
@@ -321,15 +145,38 @@ class BmkgSyncService
     private function createDisasterFromBmkgData(array $earthquakeData): ?Disaster
     {
         try {
-            // Parse date and time from BMKG format
-            $dateTime = $this->parseBmkgDateTime($earthquakeData['datetime']);
+            // Basic validation: require region, coordinates, magnitude, and a parsable date/time
+            $region = $earthquakeData['region'] ?? null;
+            $coords = $earthquakeData['coordinates'] ?? null;
+            $latOk = is_array($coords) && isset($coords['latitude']) && is_numeric($coords['latitude']);
+            $longOk = is_array($coords) && isset($coords['longitude']) && is_numeric($coords['longitude']);
+            $magOk = isset($earthquakeData['magnitude']) && is_numeric($earthquakeData['magnitude']);
+            if (!$region || !$latOk || !$longOk || !$magOk) {
+                Log::warning('Skipping BMKG disaster creation due to incomplete data', [
+                    'region' => $region,
+                    'coordinates' => $coords,
+                    'magnitude' => $earthquakeData['magnitude'] ?? null,
+                ]);
+                return null;
+            }
+            // Prefer ISO DateTime (UTC) and convert to Asia/Jakarta for date & time
+            if (!empty($earthquakeData['datetime_utc'])) {
+                $dt = Carbon::parse($earthquakeData['datetime_utc'])->setTimezone('Asia/Jakarta');
+                $dateTime = [
+                    'date' => $dt->format('Y-m-d'),
+                    'time' => $dt->format('H:i:s'),
+                ];
+            } else {
+                $dateTime = $this->parseBmkgDateTime($earthquakeData['datetime'] ?? '');
+            }
             
-            // Create disaster title
+            // Create disaster title and enforce DB column length (45)
             $title = sprintf(
                 'Gempa Bumi M%.1f - %s',
                 $earthquakeData['magnitude'],
                 $earthquakeData['region'] ?? 'Lokasi Tidak Diketahui'
             );
+            $title = \Illuminate\Support\Str::limit($title, 45, '');
 
             // Create disaster description
             $description = sprintf(
@@ -352,14 +199,15 @@ class BmkgSyncService
                 'status' => DisasterStatusEnum::ONGOING,
                 'date' => $dateTime['date'],
                 'time' => $dateTime['time'],
-                'location' => $earthquakeData['region'],
-                'coordinate' => sprintf(
-                    "%s, %s",
-                    $earthquakeData['coordinates']['latitude'],
-                    $earthquakeData['coordinates']['longitude']
+                // Enforce location length (45)
+                'location' => \Illuminate\Support\Str::limit($region, 45, ''),
+                'coordinate' => $earthquakeData['coordinate_string'] ?? sprintf(
+                    '%s, %s',
+                    $coords['latitude'],
+                    $coords['longitude']
                 ),
-                'lat' => $earthquakeData['coordinates']['latitude'],
-                'long' => $earthquakeData['coordinates']['longitude'],
+                'lat' => $coords['latitude'],
+                'long' => $coords['longitude'],
                 'magnitude' => $earthquakeData['magnitude'],
                 'depth' => $earthquakeData['depth'],
                 'reported_by' => null, // BMKG data, not reported by user
@@ -372,7 +220,8 @@ class BmkgSyncService
                 'disaster_id' => $disaster->id,
                 'title' => $disaster->title,
                 'magnitude' => $disaster->magnitude,
-                'region' => $disaster->location
+                'region' => $disaster->location,
+                'coordinate' => $disaster->coordinate
             ]);
 
             return $disaster;
@@ -391,7 +240,16 @@ class BmkgSyncService
      */
     private function findExistingDisaster(array $earthquakeData): ?Disaster
     {
-        $dateTime = $this->parseBmkgDateTime($earthquakeData['datetime']);
+        // Derive date/time the same way as creation to ensure consistent dedupe
+        if (!empty($earthquakeData['datetime_utc'])) {
+            $dt = Carbon::parse($earthquakeData['datetime_utc'])->setTimezone('Asia/Jakarta');
+            $dateTime = [
+                'date' => $dt->format('Y-m-d'),
+                'time' => $dt->format('H:i:s'),
+            ];
+        } else {
+            $dateTime = $this->parseBmkgDateTime($earthquakeData['datetime'] ?? '');
+        }
         
         return Disaster::where('source', DisasterSourceEnum::BMKG)
             ->where('types', DisasterTypeEnum::EARTHQUAKE)
@@ -409,8 +267,23 @@ class BmkgSyncService
     private function parseBmkgDateTime(string $bmkgDateTime): array
     {
         try {
-            // BMKG format: "21 Okt 2025, 15:57:01 WIB"
-            $dateTime = Carbon::createFromFormat('d M Y, H:i:s T', $bmkgDateTime);
+            // Support ISO or Indonesian month names (fallback)
+            if (str_contains($bmkgDateTime, 'T')) {
+                $dt = Carbon::parse($bmkgDateTime)->setTimezone('Asia/Jakarta');
+                return [
+                    'date' => $dt->format('Y-m-d'),
+                    'time' => $dt->format('H:i:s')
+                ];
+            }
+
+            // Try to convert Indonesian month abbreviations
+            $map = ['Jan'=>'Jan','Feb'=>'Feb','Mar'=>'Mar','Apr'=>'Apr','Mei'=>'May','Jun'=>'Jun','Jul'=>'Jul','Agu'=>'Aug','Sep'=>'Sep','Okt'=>'Oct','Nov'=>'Nov','Des'=>'Dec'];
+            $converted = preg_replace_callback('/\b(Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des)\b/u', function($m) use ($map){return $map[$m[1]] ?? $m[1];}, $bmkgDateTime);
+            $converted = str_replace([' WIB',' WITA',' WIT'], '', $converted);
+            if (!str_contains($converted, ',')) {
+                $converted .= ', 00:00:00';
+            }
+            $dateTime = Carbon::createFromFormat('d M Y, H:i:s', trim($converted), 'Asia/Jakarta');
             
             return [
                 'date' => $dateTime->format('Y-m-d'),

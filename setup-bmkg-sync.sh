@@ -16,20 +16,11 @@ fi
 echo "✅ Laravel project detected"
 echo ""
 
-# Test the sync command
-echo "🧪 Testing BMKG sync command..."
-php artisan bmkg:sync-earthquakes --type=latest --schedule
+# Scheduler-driven: no custom command required
+echo "🧪 Checking Laravel scheduler configuration..."
+php artisan schedule:list || { echo "❌ Failed to list scheduler. Check your setup."; exit 1; }
 
-if [ $? -eq 0 ]; then
-    echo "✅ BMKG sync command working correctly"
-else
-    echo "❌ BMKG sync command failed. Please check your configuration."
-    exit 1
-fi
-
-echo ""
-echo "📅 Setting up scheduled sync..."
-echo ""
+echo "\n📅 Setting up scheduled sync...\n"
 
 # Create cron job entry
 CRON_ENTRY="* * * * * cd $(pwd) && php artisan schedule:run >> /dev/null 2>&1"
@@ -49,16 +40,11 @@ php artisan schedule:list
 echo ""
 echo "🎯 Scheduled Sync Configuration:"
 echo "  • Latest earthquakes: Every minute"
-echo "  • Recent earthquakes (M 5.0+): Every 5 minutes"
-echo "  • Felt earthquakes: Every 10 minutes"
 echo ""
 echo "📊 To monitor sync activity, check Laravel logs:"
 echo "  tail -f storage/logs/laravel.log | grep BMKG"
 echo ""
-echo "🛠️  Manual sync commands:"
-echo "  php artisan bmkg:sync-earthquakes --type=latest"
-echo "  php artisan bmkg:sync-earthquakes --type=recent"
-echo "  php artisan bmkg:sync-earthquakes --type=felt"
-echo "  php artisan bmkg:sync-earthquakes --type=all"
+echo "🛠️  Run scheduler once now (if due):"
+echo "  php artisan schedule:run"
 echo ""
 echo "✅ Setup complete! Your BMKG earthquake sync is now configured."

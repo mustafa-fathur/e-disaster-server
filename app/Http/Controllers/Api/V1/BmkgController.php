@@ -44,31 +44,7 @@ class BmkgController extends Controller
      *     )
      * )
      */
-    public function getEarthquakeData(Request $request)
-    {
-        $type = $request->query('type', 'latest');
-        
-        try {
-            $data = $this->fetchBmkgData($type);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Earthquake data retrieved successfully',
-                'data' => $data,
-                'source' => 'BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)',
-                'last_updated' => now()->format('Y-m-d H:i:s')
-            ], 200);
-            
-        } catch (\Exception $e) {
-            Log::error('BMKG API Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch earthquake data from BMKG',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    // Removed generic earthquakes endpoint to keep latest-only
 
     /**
      * @OA\Get(
@@ -130,29 +106,7 @@ class BmkgController extends Controller
      *     )
      * )
      */
-    public function getRecentEarthquakes(Request $request)
-    {
-        try {
-            $data = $this->fetchBmkgData('recent');
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Recent earthquakes data retrieved successfully',
-                'data' => $data,
-                'source' => 'BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)',
-                'last_updated' => now()->format('Y-m-d H:i:s')
-            ], 200);
-            
-        } catch (\Exception $e) {
-            Log::error('BMKG Recent API Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch recent earthquakes data from BMKG',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    // Removed recent earthquakes endpoint
 
     /**
      * @OA\Get(
@@ -172,76 +126,17 @@ class BmkgController extends Controller
      *     )
      * )
      */
-    public function getFeltEarthquakes(Request $request)
-    {
-        try {
-            $data = $this->fetchBmkgData('felt');
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Felt earthquakes data retrieved successfully',
-                'data' => $data,
-                'source' => 'BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)',
-                'last_updated' => now()->format('Y-m-d H:i:s')
-            ], 200);
-            
-        } catch (\Exception $e) {
-            Log::error('BMKG Felt API Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch felt earthquakes data from BMKG',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    // Removed felt earthquakes endpoint
 
     /**
      * Fetch earthquake data from BMKG API
      */
-    private function fetchBmkgData($type = 'latest')
-    {
-        $endpoints = [
-            'latest' => 'https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json',
-            'recent' => 'https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json',
-            'felt' => 'https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json'
-        ];
-
-        if (!isset($endpoints[$type])) {
-            throw new \InvalidArgumentException("Invalid earthquake data type: {$type}");
-        }
-
-        $response = Http::timeout(10)->get($endpoints[$type]);
-
-        if (!$response->successful()) {
-            throw new \Exception("BMKG API returned status: {$response->status()}");
-        }
-
-        $data = $response->json();
-
-        if (!$data) {
-            throw new \Exception("Invalid JSON response from BMKG API");
-        }
-
-        return $this->formatBmkgData($data, $type);
-    }
+    // Removed generic fetch method; latest-only endpoints remain
 
     /**
      * Format BMKG data to standardized format
      */
-    private function formatBmkgData($data, $type)
-    {
-        switch ($type) {
-            case 'latest':
-                return $this->formatLatestEarthquake($data);
-            case 'recent':
-                return $this->formatRecentEarthquakes($data);
-            case 'felt':
-                return $this->formatFeltEarthquakes($data);
-            default:
-                return $data;
-        }
-    }
+    // Removed generic format switcher; keep latest-only format
 
     /**
      * Format latest earthquake data
@@ -274,76 +169,12 @@ class BmkgController extends Controller
     /**
      * Format recent earthquakes data
      */
-    private function formatRecentEarthquakes($data)
-    {
-        $earthquakes = [];
-        
-        if (isset($data['Infogempa']['gempa'])) {
-            $gempaData = $data['Infogempa']['gempa'];
-            
-            // Handle single earthquake or array of earthquakes
-            if (isset($gempaData['Tanggal'])) {
-                $gempaData = [$gempaData];
-            }
-            
-            foreach ($gempaData as $earthquake) {
-                $earthquakes[] = [
-                    'datetime' => $earthquake['Tanggal'] ?? null,
-                    'datetime_utc' => $earthquake['DateTime'] ?? null,
-                    'coordinates' => [
-                        'latitude' => floatval($earthquake['point']['coordinates'][1] ?? 0),
-                        'longitude' => floatval($earthquake['point']['coordinates'][0] ?? 0)
-                    ],
-                    'magnitude' => floatval($earthquake['Magnitude'] ?? 0),
-                    'depth' => floatval($earthquake['Kedalaman'] ?? 0),
-                    'region' => $earthquake['Wilayah'] ?? null,
-                    'tsunami_potential' => $earthquake['Potensi'] ?? null,
-                    'felt' => $earthquake['Dirasakan'] ?? null,
-                    'shakemap_url' => isset($earthquake['Shakemap']) ? 
-                        "https://static.bmkg.go.id/{$earthquake['Shakemap']}.jpg" : null
-                ];
-            }
-        }
-        
-        return $earthquakes;
-    }
+    // Removed recent format helper
 
     /**
      * Format felt earthquakes data
      */
-    private function formatFeltEarthquakes($data)
-    {
-        $earthquakes = [];
-        
-        if (isset($data['Infogempa']['gempa'])) {
-            $gempaData = $data['Infogempa']['gempa'];
-            
-            // Handle single earthquake or array of earthquakes
-            if (isset($gempaData['Tanggal'])) {
-                $gempaData = [$gempaData];
-            }
-            
-            foreach ($gempaData as $earthquake) {
-                $earthquakes[] = [
-                    'datetime' => $earthquake['Tanggal'] ?? null,
-                    'datetime_utc' => $earthquake['DateTime'] ?? null,
-                    'coordinates' => [
-                        'latitude' => floatval($earthquake['point']['coordinates'][1] ?? 0),
-                        'longitude' => floatval($earthquake['point']['coordinates'][0] ?? 0)
-                    ],
-                    'magnitude' => floatval($earthquake['Magnitude'] ?? 0),
-                    'depth' => floatval($earthquake['Kedalaman'] ?? 0),
-                    'region' => $earthquake['Wilayah'] ?? null,
-                    'tsunami_potential' => $earthquake['Potensi'] ?? null,
-                    'felt' => $earthquake['Dirasakan'] ?? null,
-                    'shakemap_url' => isset($earthquake['Shakemap']) ? 
-                        "https://static.bmkg.go.id/{$earthquake['Shakemap']}.jpg" : null
-                ];
-            }
-        }
-        
-        return $earthquakes;
-    }
+    // Removed felt format helper
 
     /**
      * @OA\Post(
@@ -405,15 +236,7 @@ class BmkgController extends Controller
      *     )
      * )
      */
-    public function syncRecentEarthquakes(Request $request)
-    {
-        $syncService = new BmkgSyncService();
-        $result = $syncService->syncRecentEarthquakes();
-        
-        $statusCode = $result['success'] ? 200 : 500;
-        
-        return response()->json($result, $statusCode);
-    }
+    // Removed recent sync endpoint
 
     /**
      * @OA\Post(
@@ -438,15 +261,7 @@ class BmkgController extends Controller
      *     )
      * )
      */
-    public function syncFeltEarthquakes(Request $request)
-    {
-        $syncService = new BmkgSyncService();
-        $result = $syncService->syncFeltEarthquakes();
-        
-        $statusCode = $result['success'] ? 200 : 500;
-        
-        return response()->json($result, $statusCode);
-    }
+    // Removed felt sync endpoint
 
     /**
      * @OA\Post(
@@ -471,13 +286,5 @@ class BmkgController extends Controller
      *     )
      * )
      */
-    public function syncAllEarthquakes(Request $request)
-    {
-        $syncService = new BmkgSyncService();
-        $result = $syncService->syncAllEarthquakes();
-        
-        $statusCode = $result['success'] ? 200 : 500;
-        
-        return response()->json($result, $statusCode);
-    }
+    // Removed all sync endpoint
 }

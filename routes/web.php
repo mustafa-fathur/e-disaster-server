@@ -27,6 +27,8 @@ Route::middleware(['auth'])->group(function () {
             ),
         )
         ->name('two-factor.show');
+
+    Volt::route('notifications', 'notification')->name('notification');
 });
 
 // Admin routes with prefix

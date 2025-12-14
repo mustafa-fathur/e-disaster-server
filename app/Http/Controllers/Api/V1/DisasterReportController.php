@@ -51,10 +51,21 @@ class DisasterReportController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Reports retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
-     *             @OA\Property(property="pagination", type="object")
-     *         )
+    *         @OA\JsonContent(
+    *             @OA\Property(property="data", type="array", @OA\Items(type="object",
+    *                 @OA\Property(property="id", type="string"),
+    *                 @OA\Property(property="disaster_id", type="string"),
+    *                 @OA\Property(property="reported_by", type="string"),
+    *                 @OA\Property(property="title", type="string"),
+    *                 @OA\Property(property="description", type="string"),
+    *                 @OA\Property(property="lat", type="number", format="float", nullable=true, example=-6.2088),
+    *                 @OA\Property(property="long", type="number", format="float", nullable=true, example=106.8456),
+    *                 @OA\Property(property="is_final_stage", type="boolean"),
+    *                 @OA\Property(property="created_at", type="string", format="date-time"),
+    *                 @OA\Property(property="updated_at", type="string", format="date-time")
+    *             )),
+    *             @OA\Property(property="pagination", type="object")
+    *         )
      *     ),
      *     @OA\Response(
      *         response=403,
@@ -153,7 +164,9 @@ class DisasterReportController extends Controller
     *                 required={"title","description"},
     *                 @OA\Property(property="title", type="string", example="Damage Assessment Report"),
     *                 @OA\Property(property="description", type="string", example="Detailed report on building damage and casualties"),
-    *                 @OA\Property(property="is_final_stage", type="boolean", example=false, description="Mark as final stage (completes disaster)")
+    *                 @OA\Property(property="is_final_stage", type="boolean", example=false, description="Mark as final stage (completes disaster)"),
+    *                 @OA\Property(property="lat", type="number", format="float", nullable=true, example=-6.2088),
+    *                 @OA\Property(property="long", type="number", format="float", nullable=true, example=106.8456)
     *             )
     *         ),
     *         @OA\MediaType(
@@ -315,7 +328,9 @@ class DisasterReportController extends Controller
      *                 @OA\Property(property="id", type="string"),
      *                 @OA\Property(property="title", type="string"),
      *                 @OA\Property(property="description", type="string"),
-     *                 @OA\Property(property="is_final_stage", type="boolean"),
+    *                 @OA\Property(property="is_final_stage", type="boolean"),
+    *                 @OA\Property(property="lat", type="number", format="float", nullable=true, example=-6.2088),
+    *                 @OA\Property(property="long", type="number", format="float", nullable=true, example=106.8456),
      *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
      *                 @OA\Property(property="created_at", type="string", format="date-time"),
      *                 @OA\Property(property="updated_at", type="string", format="date-time")
@@ -422,7 +437,9 @@ class DisasterReportController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="title", type="string", example="Updated Damage Assessment Report"),
      *             @OA\Property(property="description", type="string", example="Updated detailed report on building damage and casualties"),
-     *             @OA\Property(property="is_final_stage", type="boolean", example=true, description="Mark as final stage (completes disaster)")
+    *             @OA\Property(property="is_final_stage", type="boolean", example=true, description="Mark as final stage (completes disaster)"),
+    *             @OA\Property(property="lat", type="number", format="float", nullable=true, example=-6.2088),
+    *             @OA\Property(property="long", type="number", format="float", nullable=true, example=106.8456)
      *         )
      *     ),
      *     @OA\Response(

@@ -3131,6 +3131,46 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "disaster_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "reported_by": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": {
+                                                        "type": "string"
+                                                    },
+                                                    "lat": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": -6.2088,
+                                                        "nullable": true
+                                                    },
+                                                    "long": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 106.8456,
+                                                        "nullable": true
+                                                    },
+                                                    "is_final_stage": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
                                                 "type": "object"
                                             }
                                         },
@@ -3223,6 +3263,18 @@
                                         "description": "Mark as final stage (completes disaster)",
                                         "type": "boolean",
                                         "example": false
+                                    },
+                                    "lat": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": -6.2088,
+                                        "nullable": true
+                                    },
+                                    "long": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 106.8456,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -3384,6 +3436,18 @@
                                                 "is_final_stage": {
                                                     "type": "boolean"
                                                 },
+                                                "lat": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": -6.2088,
+                                                    "nullable": true
+                                                },
+                                                "long": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 106.8456,
+                                                    "nullable": true
+                                                },
                                                 "pictures": {
                                                     "type": "array",
                                                     "items": {
@@ -3493,6 +3557,18 @@
                                         "description": "Mark as final stage (completes disaster)",
                                         "type": "boolean",
                                         "example": true
+                                    },
+                                    "lat": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": -6.2088,
+                                        "nullable": true
+                                    },
+                                    "long": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 106.8456,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"

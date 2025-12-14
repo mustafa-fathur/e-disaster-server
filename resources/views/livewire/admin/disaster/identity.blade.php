@@ -87,6 +87,24 @@ new #[Layout('components.layouts.app')] class extends Component {
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Lokasi</p>
 					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->location }}</p>
 				</div>
+				@if($disaster->coordinate)
+					<div>
+						<p class="text-xs text-zinc-500 dark:text-zinc-400">Koordinat</p>
+						<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->coordinate }}</p>
+					</div>
+				@endif
+				@if(!is_null($disaster->magnitude))
+					<div>
+						<p class="text-xs text-zinc-500 dark:text-zinc-400">Magnitudo</p>
+						<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ number_format($disaster->magnitude, 1) }}</p>
+					</div>
+				@endif
+				@if(!is_null($disaster->depth))
+					<div>
+						<p class="text-xs text-zinc-500 dark:text-zinc-400">Kedalaman</p>
+						<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ number_format($disaster->depth, 0) }} km</p>
+					</div>
+				@endif
 				<div>
 					<p class="text-xs text-zinc-500 dark:text-zinc-400">Pelapor</p>
 					<p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $disaster->reporter?->name ?? '—' }}</p>

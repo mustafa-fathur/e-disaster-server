@@ -236,7 +236,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 									{{ __('Final') }}
 								</span>
 							@endif
-							@if($report->lat && $report->long)
+							@if(!is_null($report->lat) && !is_null($report->long))
 								<span>{{ __('Koordinat:') }} <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ $report->lat }}, {{ $report->long }}</span></span>
 							@endif
 						</div>

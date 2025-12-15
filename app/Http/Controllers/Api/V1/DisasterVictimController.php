@@ -136,42 +136,45 @@ class DisasterVictimController extends Controller
      *         description="Disaster ID",
      *         required=true,
      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f659")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"nik","name","date_of_birth","gender"},
-     *             @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
-     *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
-     *             @OA\Property(property="gender", type="boolean", example=true),
-     *             @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","missing"}, example="minor_injury"),
-     *             @OA\Property(property="contact_info", type="string", example="081234567890"),
-     *             @OA\Property(property="description", type="string", example="Victim found trapped under debris"),
-     *             @OA\Property(property="is_evacuated", type="boolean", example=false)
-     *         ),
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 required={"nik","name","date_of_birth","gender"},
-     *                 @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
-     *                 @OA\Property(property="name", type="string", example="John Doe"),
-     *                 @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
-     *                 @OA\Property(property="gender", type="boolean", example=true),
-     *                 @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","missing"}, example="minor_injury"),
-     *                 @OA\Property(property="contact_info", type="string", example="081234567890"),
-     *                 @OA\Property(property="description", type="string", example="Victim found trapped under debris"),
-     *                 @OA\Property(property="is_evacuated", type="boolean", example=false),
-     *                 @OA\Property(
-     *                     property="images",
-     *                     type="array",
-     *                     @OA\Items(type="string", format="binary")
-     *                 ),
-     *                 @OA\Property(property="caption", type="string", example="Victim photo"),
-     *                 @OA\Property(property="alt_text", type="string", example="Photo of the victim")
-     *             )
-     *         )
-     *     ),
+    *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\MediaType(
+    *             mediaType="application/json",
+    *             @OA\Schema(
+    *                 required={"nik","name","date_of_birth","gender"},
+    *                 @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
+    *                 @OA\Property(property="name", type="string", example="John Doe Updated"),
+    *                 @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
+    *                 @OA\Property(property="gender", type="boolean", example=true),
+    *                 @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","lost"}, example="serious_injuries"),
+    *                 @OA\Property(property="contact_info", type="string", example="081234567890"),
+    *                 @OA\Property(property="description", type="string", example="Updated victim status - now in stable condition"),
+    *                 @OA\Property(property="is_evacuated", type="boolean", example=false)
+    *             )
+    *         ),
+    *         @OA\MediaType(
+    *             mediaType="multipart/form-data",
+    *             @OA\Schema(
+    *                 required={"nik","name","date_of_birth","gender"},
+    *                 @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
+    *                 @OA\Property(property="name", type="string", example="John Doe"),
+    *                 @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
+    *                 @OA\Property(property="gender", type="boolean", example=true),
+    *                 @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","lost"}, example="minor_injury"),
+    *                 @OA\Property(property="contact_info", type="string", example="081234567890"),
+    *                 @OA\Property(property="description", type="string", example="Victim found trapped under debris"),
+    *                 @OA\Property(property="is_evacuated", type="boolean", example=false),
+    *                 @OA\Property(
+    *                     property="images",
+    *                     type="array",
+    *                     @OA\Items(type="string", format="binary")
+    *                 ),
+    *                 @OA\Property(property="caption", type="string", example="Victim photo"),
+    *                 @OA\Property(property="alt_text", type="string", example="Photo of the victim")
+    *             )
+    *         )
+    *     ),
      *     @OA\Response(
      *         response=201,
      *         description="Victim record created successfully",
@@ -195,6 +198,14 @@ class DisasterVictimController extends Controller
      *             @OA\Property(property="errors", type="object")
      *         )
      *     )
+    *     ,
+    *     @OA\Response(
+    *         response=404,
+    *         description="Disaster not found",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="message", type="string", example="Disaster not found.")
+    *         )
+    *     )
      * )
      */
     public function createDisasterVictim(Request $request, $id)
@@ -217,7 +228,7 @@ class DisasterVictimController extends Controller
                 'berat' => 'serious_injuries',
                 'meninggal' => 'deceased',
                 'md' => 'deceased',
-                'hilang' => 'missing',
+                'hilang' => 'lost',
             ];
             $normalized = $map[strtolower(trim($statusLabel))] ?? $statusLabel;
             $request->merge(['status' => $normalized]);
@@ -231,7 +242,7 @@ class DisasterVictimController extends Controller
             'contact_info' => 'nullable|string|max:45',
             'description' => 'nullable|string',
             'is_evacuated' => 'nullable|boolean',
-            'status' => 'nullable|in:minor_injury,serious_injuries,deceased,missing',
+            'status' => 'nullable|in:minor_injury,serious_injuries,deceased,lost',
             // Optional images in multipart
             'images' => 'sometimes|array',
             'images.*' => 'file|mimes:jpg,jpeg,png|max:5120',
@@ -337,20 +348,24 @@ class DisasterVictimController extends Controller
      *         response=200,
      *         description="Victim details retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="id", type="string"),
-     *                 @OA\Property(property="name", type="string"),
-     *                 @OA\Property(property="age", type="integer"),
-     *                 @OA\Property(property="gender", type="boolean"),
-     *                 @OA\Property(property="status", type="string"),
-     *                 @OA\Property(property="description", type="string"),
-     *                 @OA\Property(property="location", type="string"),
-     *                 @OA\Property(property="lat", type="number"),
-     *                 @OA\Property(property="long", type="number"),
-     *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
-     *                 @OA\Property(property="created_at", type="string", format="date-time"),
-     *                 @OA\Property(property="updated_at", type="string", format="date-time")
-     *             )
+    *             @OA\Property(property="data", type="object",
+    *                 @OA\Property(property="id", type="string"),
+    *                 @OA\Property(property="disaster_id", type="string"),
+    *                 @OA\Property(property="disaster_title", type="string"),
+    *                 @OA\Property(property="nik", type="string"),
+    *                 @OA\Property(property="name", type="string"),
+    *                 @OA\Property(property="date_of_birth", type="string", format="date"),
+    *                 @OA\Property(property="gender", type="boolean"),
+    *                 @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","lost"}),
+    *                 @OA\Property(property="contact_info", type="string"),
+    *                 @OA\Property(property="description", type="string"),
+    *                 @OA\Property(property="is_evacuated", type="boolean"),
+    *                 @OA\Property(property="reported_by", type="string"),
+    *                 @OA\Property(property="reporter_name", type="string"),
+    *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
+    *                 @OA\Property(property="created_at", type="string", format="date-time"),
+    *                 @OA\Property(property="updated_at", type="string", format="date-time")
+    *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -453,19 +468,19 @@ class DisasterVictimController extends Controller
      *         required=true,
      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f660")
      *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", example="John Doe Updated"),
-     *             @OA\Property(property="age", type="integer", example=36),
-     *             @OA\Property(property="gender", type="boolean", example=true),
-     *             @OA\Property(property="status", type="string", enum={"luka ringan","luka berat","meninggal","hilang"}, example="luka berat"),
-     *             @OA\Property(property="description", type="string", example="Updated victim status - now in stable condition"),
-     *             @OA\Property(property="location", type="string", example="Hospital A, Room 205"),
-     *             @OA\Property(property="lat", type="number", example=-6.2088),
-     *             @OA\Property(property="long", type="number", example=106.8456)
-     *         )
-     *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\JsonContent(
+    *             @OA\Property(property="nik", type="string", example="3173xxxxxxxxxxxx"),
+    *             @OA\Property(property="name", type="string", example="John Doe Updated"),
+    *             @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
+    *             @OA\Property(property="gender", type="boolean", example=true),
+    *             @OA\Property(property="status", type="string", enum={"minor_injury","serious_injuries","deceased","lost"}, example="serious_injuries"),
+    *             @OA\Property(property="contact_info", type="string", example="081234567890"),
+    *             @OA\Property(property="description", type="string", example="Updated victim status - now in stable condition"),
+    *             @OA\Property(property="is_evacuated", type="boolean", example=false)
+    *         )
+    *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Victim record updated successfully",
@@ -488,6 +503,15 @@ class DisasterVictimController extends Controller
      *             @OA\Property(property="message", type="string", example="Disaster victim not found.")
      *         )
      *     )
+    *     ,
+    *     @OA\Response(
+    *         response=422,
+    *         description="Validation failed",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="message", type="string", example="Validation failed."),
+    *             @OA\Property(property="errors", type="object")
+    *         )
+    *     )
      * )
      */
     public function updateDisasterVictim(Request $request, $id, $victimId)
@@ -518,7 +542,7 @@ class DisasterVictimController extends Controller
             'contact_info' => 'nullable|string|max:45',
             'description' => 'nullable|string',
             'is_evacuated' => 'nullable|boolean',
-            'status' => 'sometimes|required|in:minor_injury,serious_injuries,deceased,missing',
+            'status' => 'sometimes|required|in:minor_injury,serious_injuries,deceased,lost',
         ]);
 
         if ($validator->fails()) {

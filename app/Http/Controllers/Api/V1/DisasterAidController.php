@@ -49,13 +49,13 @@ class DisasterAidController extends Controller
      *         required=false,
      *         @OA\Schema(type="string", example="food")
      *     ),
-     *     @OA\Parameter(
-     *         name="category",
-     *         in="query",
-     *         description="Filter by aid category",
-     *         required=false,
-     *         @OA\Schema(type="string", enum={"makanan","obat","pakaian","shelter","transportasi","lainnya"})
-     *     ),
+    *     @OA\Parameter(
+    *         name="category",
+    *         in="query",
+    *         description="Filter by aid category",
+    *         required=false,
+    *         @OA\Schema(type="string", enum={"food","clothing","housing"})
+    *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Aids retrieved successfully",
@@ -136,19 +136,17 @@ class DisasterAidController extends Controller
      *         required=true,
      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f659")
      *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"name","category","quantity"},
-     *             @OA\Property(property="name", type="string", example="Emergency Food Pack"),
-     *             @OA\Property(property="category", type="string", enum={"makanan","obat","pakaian","shelter","transportasi","lainnya"}, example="makanan"),
-     *             @OA\Property(property="quantity", type="integer", example=100),
-     *             @OA\Property(property="description", type="string", example="Ready-to-eat meals for disaster victims"),
-     *             @OA\Property(property="location", type="string", example="Distribution Center A"),
-     *             @OA\Property(property="lat", type="number", example=-6.2088),
-     *             @OA\Property(property="long", type="number", example=106.8456)
-     *         )
-     *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\JsonContent(
+    *             required={"title","category","quantity","unit"},
+    *             @OA\Property(property="title", type="string", example="Emergency Food Pack"),
+    *             @OA\Property(property="category", type="string", enum={"food","clothing","housing"}, example="food"),
+    *             @OA\Property(property="quantity", type="integer", example=100),
+    *             @OA\Property(property="unit", type="string", example="pack"),
+    *             @OA\Property(property="description", type="string", example="Ready-to-eat meals for disaster victims")
+    *         )
+    *     ),
      *     @OA\Response(
      *         response=201,
      *         description="Aid record created successfully",
@@ -172,6 +170,14 @@ class DisasterAidController extends Controller
      *             @OA\Property(property="errors", type="object")
      *         )
      *     )
+    *     ,
+    *     @OA\Response(
+    *         response=404,
+    *         description="Disaster not found",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="message", type="string", example="Disaster not found.")
+    *         )
+    *     )
      * )
      */
     public function createDisasterAid(Request $request, $id)
@@ -266,19 +272,21 @@ class DisasterAidController extends Controller
      *         response=200,
      *         description="Aid details retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="id", type="string"),
-     *                 @OA\Property(property="name", type="string"),
-     *                 @OA\Property(property="category", type="string"),
-     *                 @OA\Property(property="quantity", type="integer"),
-     *                 @OA\Property(property="description", type="string"),
-     *                 @OA\Property(property="location", type="string"),
-     *                 @OA\Property(property="lat", type="number"),
-     *                 @OA\Property(property="long", type="number"),
-     *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
-     *                 @OA\Property(property="created_at", type="string", format="date-time"),
-     *                 @OA\Property(property="updated_at", type="string", format="date-time")
-     *             )
+    *             @OA\Property(property="data", type="object",
+    *                 @OA\Property(property="id", type="string"),
+    *                 @OA\Property(property="disaster_id", type="string"),
+    *                 @OA\Property(property="disaster_title", type="string"),
+    *                 @OA\Property(property="title", type="string"),
+    *                 @OA\Property(property="description", type="string"),
+    *                 @OA\Property(property="category", type="string", enum={"food","clothing","housing"}),
+    *                 @OA\Property(property="quantity", type="integer"),
+    *                 @OA\Property(property="unit", type="string"),
+    *                 @OA\Property(property="reported_by", type="string"),
+    *                 @OA\Property(property="reporter_name", type="string"),
+    *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
+    *                 @OA\Property(property="created_at", type="string", format="date-time"),
+    *                 @OA\Property(property="updated_at", type="string", format="date-time")
+    *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -378,18 +386,16 @@ class DisasterAidController extends Controller
      *         required=true,
      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f660")
      *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", example="Updated Emergency Food Pack"),
-     *             @OA\Property(property="category", type="string", enum={"makanan","obat","pakaian","shelter","transportasi","lainnya"}, example="makanan"),
-     *             @OA\Property(property="quantity", type="integer", example=150),
-     *             @OA\Property(property="description", type="string", example="Updated ready-to-eat meals for disaster victims"),
-     *             @OA\Property(property="location", type="string", example="Updated Distribution Center A"),
-     *             @OA\Property(property="lat", type="number", example=-6.2088),
-     *             @OA\Property(property="long", type="number", example=106.8456)
-     *         )
-     *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\JsonContent(
+    *             @OA\Property(property="title", type="string", example="Updated Emergency Food Pack"),
+    *             @OA\Property(property="category", type="string", enum={"food","clothing","housing"}, example="food"),
+    *             @OA\Property(property="quantity", type="integer", example=150),
+    *             @OA\Property(property="unit", type="string", example="pack"),
+    *             @OA\Property(property="description", type="string", example="Updated ready-to-eat meals for disaster victims")
+    *         )
+    *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Aid record updated successfully",
@@ -412,6 +418,15 @@ class DisasterAidController extends Controller
      *             @OA\Property(property="message", type="string", example="Disaster aid not found.")
      *         )
      *     )
+    *     ,
+    *     @OA\Response(
+    *         response=422,
+    *         description="Validation failed",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="message", type="string", example="Validation failed."),
+    *             @OA\Property(property="errors", type="object")
+    *         )
+    *     )
      * )
      */
     public function updateDisasterAid(Request $request, $id, $aidId)

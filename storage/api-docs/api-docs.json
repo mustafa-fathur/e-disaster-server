@@ -988,12 +988,9 @@
                         "schema": {
                             "type": "string",
                             "enum": [
-                                "makanan",
-                                "obat",
-                                "pakaian",
-                                "shelter",
-                                "transportasi",
-                                "lainnya"
+                                "food",
+                                "clothing",
+                                "housing"
                             ]
                         }
                     }
@@ -1084,46 +1081,36 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "name",
+                                    "title",
                                     "category",
-                                    "quantity"
+                                    "quantity",
+                                    "unit"
                                 ],
                                 "properties": {
-                                    "name": {
+                                    "title": {
                                         "type": "string",
                                         "example": "Emergency Food Pack"
                                     },
                                     "category": {
                                         "type": "string",
                                         "enum": [
-                                            "makanan",
-                                            "obat",
-                                            "pakaian",
-                                            "shelter",
-                                            "transportasi",
-                                            "lainnya"
+                                            "food",
+                                            "clothing",
+                                            "housing"
                                         ],
-                                        "example": "makanan"
+                                        "example": "food"
                                     },
                                     "quantity": {
                                         "type": "integer",
                                         "example": 100
                                     },
+                                    "unit": {
+                                        "type": "string",
+                                        "example": "pack"
+                                    },
                                     "description": {
                                         "type": "string",
                                         "example": "Ready-to-eat meals for disaster victims"
-                                    },
-                                    "location": {
-                                        "type": "string",
-                                        "example": "Distribution Center A"
-                                    },
-                                    "lat": {
-                                        "type": "number",
-                                        "example": -6.2088
-                                    },
-                                    "long": {
-                                        "type": "number",
-                                        "example": 106.8456
                                     }
                                 },
                                 "type": "object"
@@ -1185,6 +1172,22 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Disaster not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Disaster not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -1236,26 +1239,37 @@
                                                 "id": {
                                                     "type": "string"
                                                 },
-                                                "name": {
+                                                "disaster_id": {
                                                     "type": "string"
                                                 },
-                                                "category": {
+                                                "disaster_title": {
                                                     "type": "string"
                                                 },
-                                                "quantity": {
-                                                    "type": "integer"
+                                                "title": {
+                                                    "type": "string"
                                                 },
                                                 "description": {
                                                     "type": "string"
                                                 },
-                                                "location": {
+                                                "category": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "food",
+                                                        "clothing",
+                                                        "housing"
+                                                    ]
+                                                },
+                                                "quantity": {
+                                                    "type": "integer"
+                                                },
+                                                "unit": {
                                                     "type": "string"
                                                 },
-                                                "lat": {
-                                                    "type": "number"
+                                                "reported_by": {
+                                                    "type": "string"
                                                 },
-                                                "long": {
-                                                    "type": "number"
+                                                "reporter_name": {
+                                                    "type": "string"
                                                 },
                                                 "pictures": {
                                                     "type": "array",
@@ -1354,41 +1368,30 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "name": {
+                                    "title": {
                                         "type": "string",
                                         "example": "Updated Emergency Food Pack"
                                     },
                                     "category": {
                                         "type": "string",
                                         "enum": [
-                                            "makanan",
-                                            "obat",
-                                            "pakaian",
-                                            "shelter",
-                                            "transportasi",
-                                            "lainnya"
+                                            "food",
+                                            "clothing",
+                                            "housing"
                                         ],
-                                        "example": "makanan"
+                                        "example": "food"
                                     },
                                     "quantity": {
                                         "type": "integer",
                                         "example": 150
                                     },
+                                    "unit": {
+                                        "type": "string",
+                                        "example": "pack"
+                                    },
                                     "description": {
                                         "type": "string",
                                         "example": "Updated ready-to-eat meals for disaster victims"
-                                    },
-                                    "location": {
-                                        "type": "string",
-                                        "example": "Updated Distribution Center A"
-                                    },
-                                    "lat": {
-                                        "type": "number",
-                                        "example": -6.2088
-                                    },
-                                    "long": {
-                                        "type": "number",
-                                        "example": 106.8456
                                     }
                                 },
                                 "type": "object"
@@ -1441,6 +1444,25 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Disaster aid not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation failed."
+                                        },
+                                        "errors": {
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -3532,6 +3554,58 @@
                 "requestBody": {
                     "required": true,
                     "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nik",
+                                    "name",
+                                    "date_of_birth",
+                                    "gender"
+                                ],
+                                "properties": {
+                                    "nik": {
+                                        "type": "string",
+                                        "example": "3173xxxxxxxxxxxx"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe Updated"
+                                    },
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
+                                    },
+                                    "gender": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "minor_injury",
+                                            "serious_injuries",
+                                            "deceased",
+                                            "lost"
+                                        ],
+                                        "example": "serious_injuries"
+                                    },
+                                    "contact_info": {
+                                        "type": "string",
+                                        "example": "081234567890"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Updated victim status - now in stable condition"
+                                    },
+                                    "is_evacuated": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
                         "multipart/form-data": {
                             "schema": {
                                 "required": [
@@ -3564,7 +3638,7 @@
                                             "minor_injury",
                                             "serious_injuries",
                                             "deceased",
-                                            "missing"
+                                            "lost"
                                         ],
                                         "example": "minor_injury"
                                     },
@@ -3594,58 +3668,6 @@
                                     "alt_text": {
                                         "type": "string",
                                         "example": "Photo of the victim"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        },
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "nik",
-                                    "name",
-                                    "date_of_birth",
-                                    "gender"
-                                ],
-                                "properties": {
-                                    "nik": {
-                                        "type": "string",
-                                        "example": "3173xxxxxxxxxxxx"
-                                    },
-                                    "name": {
-                                        "type": "string",
-                                        "example": "John Doe"
-                                    },
-                                    "date_of_birth": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "1990-01-01"
-                                    },
-                                    "gender": {
-                                        "type": "boolean",
-                                        "example": true
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "minor_injury",
-                                            "serious_injuries",
-                                            "deceased",
-                                            "missing"
-                                        ],
-                                        "example": "minor_injury"
-                                    },
-                                    "contact_info": {
-                                        "type": "string",
-                                        "example": "081234567890"
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "example": "Victim found trapped under debris"
-                                    },
-                                    "is_evacuated": {
-                                        "type": "boolean",
-                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -3707,6 +3729,22 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Disaster not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Disaster not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -3758,29 +3796,48 @@
                                                 "id": {
                                                     "type": "string"
                                                 },
+                                                "disaster_id": {
+                                                    "type": "string"
+                                                },
+                                                "disaster_title": {
+                                                    "type": "string"
+                                                },
+                                                "nik": {
+                                                    "type": "string"
+                                                },
                                                 "name": {
                                                     "type": "string"
                                                 },
-                                                "age": {
-                                                    "type": "integer"
+                                                "date_of_birth": {
+                                                    "type": "string",
+                                                    "format": "date"
                                                 },
                                                 "gender": {
                                                     "type": "boolean"
                                                 },
                                                 "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "minor_injury",
+                                                        "serious_injuries",
+                                                        "deceased",
+                                                        "lost"
+                                                    ]
+                                                },
+                                                "contact_info": {
                                                     "type": "string"
                                                 },
                                                 "description": {
                                                     "type": "string"
                                                 },
-                                                "location": {
+                                                "is_evacuated": {
+                                                    "type": "boolean"
+                                                },
+                                                "reported_by": {
                                                     "type": "string"
                                                 },
-                                                "lat": {
-                                                    "type": "number"
-                                                },
-                                                "long": {
-                                                    "type": "number"
+                                                "reporter_name": {
+                                                    "type": "string"
                                                 },
                                                 "pictures": {
                                                     "type": "array",
@@ -3879,13 +3936,18 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
+                                    "nik": {
+                                        "type": "string",
+                                        "example": "3173xxxxxxxxxxxx"
+                                    },
                                     "name": {
                                         "type": "string",
                                         "example": "John Doe Updated"
                                     },
-                                    "age": {
-                                        "type": "integer",
-                                        "example": 36
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
                                     },
                                     "gender": {
                                         "type": "boolean",
@@ -3894,28 +3956,24 @@
                                     "status": {
                                         "type": "string",
                                         "enum": [
-                                            "luka ringan",
-                                            "luka berat",
-                                            "meninggal",
-                                            "hilang"
+                                            "minor_injury",
+                                            "serious_injuries",
+                                            "deceased",
+                                            "lost"
                                         ],
-                                        "example": "luka berat"
+                                        "example": "serious_injuries"
+                                    },
+                                    "contact_info": {
+                                        "type": "string",
+                                        "example": "081234567890"
                                     },
                                     "description": {
                                         "type": "string",
                                         "example": "Updated victim status - now in stable condition"
                                     },
-                                    "location": {
-                                        "type": "string",
-                                        "example": "Hospital A, Room 205"
-                                    },
-                                    "lat": {
-                                        "type": "number",
-                                        "example": -6.2088
-                                    },
-                                    "long": {
-                                        "type": "number",
-                                        "example": 106.8456
+                                    "is_evacuated": {
+                                        "type": "boolean",
+                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -3968,6 +4026,25 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Disaster victim not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation failed."
+                                        },
+                                        "errors": {
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"

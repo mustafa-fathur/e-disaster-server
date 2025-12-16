@@ -144,7 +144,9 @@ class DisasterAidController extends Controller
     *             @OA\Property(property="category", type="string", enum={"food","clothing","housing"}, example="food"),
     *             @OA\Property(property="quantity", type="integer", example=100),
     *             @OA\Property(property="unit", type="string", example="pack"),
-    *             @OA\Property(property="description", type="string", example="Ready-to-eat meals for disaster victims")
+    *             @OA\Property(property="description", type="string", example="Ready-to-eat meals for disaster victims"),
+    *             @OA\Property(property="donator", type="string", example="ABC Foundation"),
+    *             @OA\Property(property="location", type="string", example="Kelurahan Sukamaju, RW 05")
     *         )
     *     ),
      *     @OA\Response(
@@ -193,6 +195,8 @@ class DisasterAidController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:45',
             'description' => 'nullable|string',
+            'donator' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:100',
             'category' => 'required|in:food,clothing,housing',
             'quantity' => 'required|integer|min:1',
             'unit' => 'required|string|max:45',
@@ -222,6 +226,8 @@ class DisasterAidController extends Controller
             'disaster_id' => $id,
             'title' => $request->title,
             'description' => $request->description,
+            'donator' => $request->donator,
+            'location' => $request->location,
             'category' => DisasterAidCategoryEnum::from($request->category),
             'quantity' => $request->quantity,
             'unit' => $request->unit,
@@ -235,6 +241,8 @@ class DisasterAidController extends Controller
                 'disaster_id' => $aid->disaster_id,
                 'title' => $aid->title,
                 'description' => $aid->description,
+                'donator' => $aid->donator,
+                'location' => $aid->location,
                 'category' => $aid->category->value,
                 'quantity' => $aid->quantity,
                 'unit' => $aid->unit,
@@ -244,67 +252,69 @@ class DisasterAidController extends Controller
         ], 201);
     }
 
-    /**
-     * Get specific disaster aid
-     */
-    /**
-     * @OA\Get(
-     *     path="/disasters/{id}/aids/{aidId}",
-     *     summary="Get disaster aid details",
-     *     description="Get detailed information about a specific disaster aid (assigned users only)",
-     *     tags={"Aids"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="Disaster ID",
-     *         required=true,
-     *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f659")
-     *     ),
-     *     @OA\Parameter(
-     *         name="aidId",
-     *         in="path",
-     *         description="Aid ID",
-     *         required=true,
-     *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f660")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Aid details retrieved successfully",
-     *         @OA\JsonContent(
-    *             @OA\Property(property="data", type="object",
-    *                 @OA\Property(property="id", type="string"),
-    *                 @OA\Property(property="disaster_id", type="string"),
-    *                 @OA\Property(property="disaster_title", type="string"),
-    *                 @OA\Property(property="title", type="string"),
-    *                 @OA\Property(property="description", type="string"),
-    *                 @OA\Property(property="category", type="string", enum={"food","clothing","housing"}),
-    *                 @OA\Property(property="quantity", type="integer"),
-    *                 @OA\Property(property="unit", type="string"),
-    *                 @OA\Property(property="reported_by", type="string"),
-    *                 @OA\Property(property="reporter_name", type="string"),
-    *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
-    *                 @OA\Property(property="created_at", type="string", format="date-time"),
-    *                 @OA\Property(property="updated_at", type="string", format="date-time")
-    *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Access denied - not assigned to disaster",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Access denied. You are not assigned to this disaster.")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Aid not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Disaster aid not found.")
-     *         )
-     *     )
-     * )
-     */
+     /**
+      * Get specific disaster aid
+      */
+     /**
+      * @OA\Get(
+      *     path="/disasters/{id}/aids/{aidId}",
+      *     summary="Get disaster aid details",
+      *     description="Get detailed information about a specific disaster aid (assigned users only)",
+      *     tags={"Aids"},
+      *     security={{"bearerAuth":{}}},
+      *     @OA\Parameter(
+      *         name="id",
+      *         in="path",
+      *         description="Disaster ID",
+      *         required=true,
+      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f659")
+      *     ),
+      *     @OA\Parameter(
+      *         name="aidId",
+      *         in="path",
+      *         description="Aid ID",
+      *         required=true,
+      *         @OA\Schema(type="string", example="0199cfbc-eab1-7262-936e-72f9a6c5f660")
+      *     ),
+      *     @OA\Response(
+      *         response=200,
+      *         description="Aid details retrieved successfully",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="data", type="object",
+      *                 @OA\Property(property="id", type="string"),
+      *                 @OA\Property(property="disaster_id", type="string"),
+      *                 @OA\Property(property="disaster_title", type="string"),
+      *                 @OA\Property(property="title", type="string"),
+      *                 @OA\Property(property="description", type="string"),
+      *                 @OA\Property(property="donator", type="string"),
+      *                 @OA\Property(property="location", type="string"),
+      *                 @OA\Property(property="category", type="string", enum={"food","clothing","housing"}),
+      *                 @OA\Property(property="quantity", type="integer"),
+      *                 @OA\Property(property="unit", type="string"),
+      *                 @OA\Property(property="reported_by", type="string"),
+      *                 @OA\Property(property="reporter_name", type="string"),
+      *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
+      *                 @OA\Property(property="created_at", type="string", format="date-time"),
+      *                 @OA\Property(property="updated_at", type="string", format="date-time")
+      *             )
+      *         )
+      *     ),
+      *     @OA\Response(
+      *         response=403,
+      *         description="Access denied - not assigned to disaster",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="message", type="string", example="Access denied. You are not assigned to this disaster.")
+      *         )
+      *     ),
+      *     @OA\Response(
+      *         response=404,
+      *         description="Aid not found",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="message", type="string", example="Disaster aid not found.")
+      *         )
+      *     )
+      * )
+      */
     public function getDisasterAid(Request $request, $id, $aidId)
     {
         $disaster = Disaster::find($id);
@@ -350,6 +360,8 @@ class DisasterAidController extends Controller
                 'disaster_title' => $aid->disaster->title,
                 'title' => $aid->title,
                 'description' => $aid->description,
+                'donator' => $aid->donator,
+                'location' => $aid->location,
                 'category' => $aid->category->value,
                 'quantity' => $aid->quantity,
                 'unit' => $aid->unit,
@@ -393,7 +405,9 @@ class DisasterAidController extends Controller
     *             @OA\Property(property="category", type="string", enum={"food","clothing","housing"}, example="food"),
     *             @OA\Property(property="quantity", type="integer", example=150),
     *             @OA\Property(property="unit", type="string", example="pack"),
-    *             @OA\Property(property="description", type="string", example="Updated ready-to-eat meals for disaster victims")
+    *             @OA\Property(property="description", type="string", example="Updated ready-to-eat meals for disaster victims"),
+    *             @OA\Property(property="donator", type="string", example="ABC Foundation"),
+    *             @OA\Property(property="location", type="string", example="Kelurahan Sukamaju, RW 05")
     *         )
     *     ),
      *     @OA\Response(
@@ -452,6 +466,8 @@ class DisasterAidController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:45',
             'description' => 'nullable|string',
+            'donator' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:100',
             'category' => 'sometimes|required|in:food,clothing,housing',
             'quantity' => 'sometimes|required|integer|min:1',
             'unit' => 'sometimes|required|string|max:45',
@@ -465,7 +481,7 @@ class DisasterAidController extends Controller
         }
 
         $updateData = $request->only([
-            'title', 'description', 'quantity', 'unit'
+            'title', 'description', 'donator', 'location', 'quantity', 'unit'
         ]);
 
         // Handle enum field
@@ -482,6 +498,8 @@ class DisasterAidController extends Controller
                 'disaster_id' => $aid->disaster_id,
                 'title' => $aid->title,
                 'description' => $aid->description,
+                'donator' => $aid->donator,
+                'location' => $aid->location,
                 'category' => $aid->category->value,
                 'quantity' => $aid->quantity,
                 'unit' => $aid->unit,

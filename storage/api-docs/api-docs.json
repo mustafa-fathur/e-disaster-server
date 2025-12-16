@@ -1677,7 +1677,18 @@
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "example": "gempa bumi"
+                            "enum": [
+                                "earthquake",
+                                "tsunami",
+                                "volcanic_eruption",
+                                "flood",
+                                "drought",
+                                "tornado",
+                                "landslide",
+                                "non_natural_disaster",
+                                "social_disaster"
+                            ],
+                            "example": "earthquake"
                         }
                     }
                 ],
@@ -1691,6 +1702,111 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "reported_by": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": {
+                                                        "type": "string"
+                                                    },
+                                                    "source": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "bmkg",
+                                                            "manual"
+                                                        ]
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "earthquake",
+                                                            "tsunami",
+                                                            "volcanic_eruption",
+                                                            "flood",
+                                                            "drought",
+                                                            "tornado",
+                                                            "landslide",
+                                                            "non_natural_disaster",
+                                                            "social_disaster"
+                                                        ]
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "ongoing",
+                                                            "completed",
+                                                            "cancelled"
+                                                        ]
+                                                    },
+                                                    "date": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "time": {
+                                                        "type": "string"
+                                                    },
+                                                    "location": {
+                                                        "type": "string"
+                                                    },
+                                                    "coordinate": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "lat": {
+                                                        "type": "number",
+                                                        "nullable": true
+                                                    },
+                                                    "long": {
+                                                        "type": "number",
+                                                        "nullable": true
+                                                    },
+                                                    "magnitude": {
+                                                        "type": "number",
+                                                        "nullable": true
+                                                    },
+                                                    "depth": {
+                                                        "type": "number",
+                                                        "nullable": true
+                                                    },
+                                                    "cancelled_reason": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "cancelled_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "nullable": true
+                                                    },
+                                                    "cancelled_by": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "completed_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "nullable": true
+                                                    },
+                                                    "completed_by": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "pictures": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
                                                 "type": "object"
                                             }
                                         },
@@ -1739,7 +1855,9 @@
                                 "required": [
                                     "title",
                                     "type",
-                                    "location"
+                                    "source",
+                                    "date",
+                                    "time"
                                 ],
                                 "properties": {
                                     "title": {
@@ -1753,29 +1871,42 @@
                                     "type": {
                                         "type": "string",
                                         "enum": [
-                                            "gempa bumi",
+                                            "earthquake",
                                             "tsunami",
-                                            "gunung meletus",
-                                            "banjir",
-                                            "kekeringan",
-                                            "angin topan",
-                                            "tahan longsor",
-                                            "bencana non alam",
-                                            "bencana sosial"
+                                            "volcanic_eruption",
+                                            "flood",
+                                            "drought",
+                                            "tornado",
+                                            "landslide",
+                                            "non_natural_disaster",
+                                            "social_disaster"
                                         ],
-                                        "example": "gempa bumi"
+                                        "example": "earthquake"
                                     },
                                     "source": {
                                         "type": "string",
                                         "enum": [
-                                            "BMKG",
+                                            "bmkg",
                                             "manual"
                                         ],
-                                        "example": "BMKG"
+                                        "example": "bmkg"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ongoing",
+                                            "completed",
+                                            "cancelled"
+                                        ],
+                                        "example": "ongoing"
                                     },
                                     "location": {
                                         "type": "string",
                                         "example": "Jakarta, Indonesia"
+                                    },
+                                    "coordinate": {
+                                        "type": "string",
+                                        "example": "6.2088,106.8456"
                                     },
                                     "lat": {
                                         "type": "number",
@@ -1811,7 +1942,9 @@
                                 "required": [
                                     "title",
                                     "type",
-                                    "location"
+                                    "source",
+                                    "date",
+                                    "time"
                                 ],
                                 "properties": {
                                     "title": {
@@ -1825,29 +1958,42 @@
                                     "type": {
                                         "type": "string",
                                         "enum": [
-                                            "gempa bumi",
+                                            "earthquake",
                                             "tsunami",
-                                            "gunung meletus",
-                                            "banjir",
-                                            "kekeringan",
-                                            "angin topan",
-                                            "tahan longsor",
-                                            "bencana non alam",
-                                            "bencana sosial"
+                                            "volcanic_eruption",
+                                            "flood",
+                                            "drought",
+                                            "tornado",
+                                            "landslide",
+                                            "non_natural_disaster",
+                                            "social_disaster"
                                         ],
-                                        "example": "gempa bumi"
+                                        "example": "earthquake"
                                     },
                                     "source": {
                                         "type": "string",
                                         "enum": [
-                                            "BMKG",
+                                            "bmkg",
                                             "manual"
                                         ],
-                                        "example": "BMKG"
+                                        "example": "bmkg"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ongoing",
+                                            "completed",
+                                            "cancelled"
+                                        ],
+                                        "example": "ongoing"
                                     },
                                     "location": {
                                         "type": "string",
                                         "example": "Jakarta, Indonesia"
+                                    },
+                                    "coordinate": {
+                                        "type": "string",
+                                        "example": "6.2088,106.8456"
                                     },
                                     "lat": {
                                         "type": "number",
@@ -2049,35 +2195,43 @@
                                                 "id": {
                                                     "type": "string"
                                                 },
+                                                "reported_by": {
+                                                    "type": "string"
+                                                },
                                                 "title": {
                                                     "type": "string"
                                                 },
                                                 "description": {
                                                     "type": "string"
                                                 },
+                                                "source": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "bmkg",
+                                                        "manual"
+                                                    ]
+                                                },
                                                 "type": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "earthquake",
+                                                        "tsunami",
+                                                        "volcanic_eruption",
+                                                        "flood",
+                                                        "drought",
+                                                        "tornado",
+                                                        "landslide",
+                                                        "non_natural_disaster",
+                                                        "social_disaster"
+                                                    ]
                                                 },
                                                 "status": {
-                                                    "type": "string"
-                                                },
-                                                "source": {
-                                                    "type": "string"
-                                                },
-                                                "location": {
-                                                    "type": "string"
-                                                },
-                                                "lat": {
-                                                    "type": "number"
-                                                },
-                                                "long": {
-                                                    "type": "number"
-                                                },
-                                                "magnitude": {
-                                                    "type": "number"
-                                                },
-                                                "depth": {
-                                                    "type": "number"
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ongoing",
+                                                        "completed",
+                                                        "cancelled"
+                                                    ]
                                                 },
                                                 "date": {
                                                     "type": "string",
@@ -2086,16 +2240,50 @@
                                                 "time": {
                                                     "type": "string"
                                                 },
-                                                "cancelled_reason": {
+                                                "location": {
                                                     "type": "string"
+                                                },
+                                                "coordinate": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "lat": {
+                                                    "type": "number",
+                                                    "nullable": true
+                                                },
+                                                "long": {
+                                                    "type": "number",
+                                                    "nullable": true
+                                                },
+                                                "magnitude": {
+                                                    "type": "number",
+                                                    "nullable": true
+                                                },
+                                                "depth": {
+                                                    "type": "number",
+                                                    "nullable": true
+                                                },
+                                                "cancelled_reason": {
+                                                    "type": "string",
+                                                    "nullable": true
                                                 },
                                                 "cancelled_at": {
                                                     "type": "string",
-                                                    "format": "date-time"
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "cancelled_by": {
+                                                    "type": "string",
+                                                    "nullable": true
                                                 },
                                                 "completed_at": {
                                                     "type": "string",
-                                                    "format": "date-time"
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "completed_by": {
+                                                    "type": "string",
+                                                    "nullable": true
                                                 },
                                                 "pictures": {
                                                     "type": "array",
@@ -2179,29 +2367,42 @@
                                     "type": {
                                         "type": "string",
                                         "enum": [
-                                            "gempa bumi",
+                                            "earthquake",
                                             "tsunami",
-                                            "gunung meletus",
-                                            "banjir",
-                                            "kekeringan",
-                                            "angin topan",
-                                            "tahan longsor",
-                                            "bencana non alam",
-                                            "bencana sosial"
+                                            "volcanic_eruption",
+                                            "flood",
+                                            "drought",
+                                            "tornado",
+                                            "landslide",
+                                            "non_natural_disaster",
+                                            "social_disaster"
                                         ],
-                                        "example": "gempa bumi"
+                                        "example": "earthquake"
                                     },
                                     "source": {
                                         "type": "string",
                                         "enum": [
-                                            "BMKG",
+                                            "bmkg",
                                             "manual"
                                         ],
-                                        "example": "BMKG"
+                                        "example": "bmkg"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ongoing",
+                                            "completed",
+                                            "cancelled"
+                                        ],
+                                        "example": "ongoing"
                                     },
                                     "location": {
                                         "type": "string",
                                         "example": "Jakarta, Indonesia"
+                                    },
+                                    "coordinate": {
+                                        "type": "string",
+                                        "example": "6.2088,106.8456"
                                     },
                                     "lat": {
                                         "type": "number",
@@ -3112,6 +3313,12 @@
                                                 "id": {
                                                     "type": "string"
                                                 },
+                                                "disaster_id": {
+                                                    "type": "string"
+                                                },
+                                                "disaster_title": {
+                                                    "type": "string"
+                                                },
                                                 "title": {
                                                     "type": "string"
                                                 },
@@ -3132,6 +3339,12 @@
                                                     "format": "float",
                                                     "example": 106.8456,
                                                     "nullable": true
+                                                },
+                                                "reported_by": {
+                                                    "type": "string"
+                                                },
+                                                "reporter_name": {
+                                                    "type": "string"
                                                 },
                                                 "pictures": {
                                                     "type": "array",

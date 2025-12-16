@@ -15,6 +15,8 @@ class DisasterAid extends Model
     protected $fillable = [
         'disaster_id',
         'reported_by',
+        'donator',
+        'location',
         'title',
         'description',
         'category',

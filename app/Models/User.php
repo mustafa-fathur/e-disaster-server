@@ -145,4 +145,20 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Disaster::class, 'disaster_volunteers');
     }
+
+    /**
+     * Get all devices for this user
+     */
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
+    }
+
+    /**
+     * Get active devices for this user
+     */
+    public function activeDevices()
+    {
+        return $this->hasMany(UserDevice::class)->where('is_active', true);
+    }
 }

@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Enums\PictureTypeEnum;
+use App\Enums\NotificationTypeEnum;
 use App\Models\Disaster;
 use App\Models\DisasterAid;
 use App\Models\DisasterVolunteer;
+use App\Models\Notification;
 use App\Models\Picture;
 use App\Enums\DisasterAidCategoryEnum;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class DisasterAidController extends Controller
@@ -126,7 +130,7 @@ class DisasterAidController extends Controller
      * @OA\Post(
      *     path="/disasters/{id}/aids",
      *     summary="Create disaster aid record",
-     *     description="Create a new aid record for a specific disaster (assigned users only)",
+     *     description="Create a new aid record for a specific disaster (assigned users only). After successful creation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator).",
      *     tags={"Aids"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -233,6 +237,64 @@ class DisasterAidController extends Controller
             'unit' => $request->unit,
             'reported_by' => $disasterVolunteer->id,
         ]);
+
+        // Send notifications to all assigned volunteers (except creator)
+        try {
+            // Get all volunteers assigned to this disaster (except creator)
+            $assignedVolunteers = DisasterVolunteer::where('disaster_id', $id)
+                ->where('user_id', '!=', $user->id)
+                ->with('user')
+                ->get();
+
+            // Create database notifications
+            foreach ($assignedVolunteers as $volunteer) {
+                Notification::create([
+                    'user_id' => $volunteer->user_id,
+                    'title' => 'New Disaster Aid Report',
+                    'message' => "A new aid report has been added to {$disaster->title}: {$aid->title}",
+                    'category' => NotificationTypeEnum::NEW_DISASTER_AID_REPORT,
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
+
+            // Send FCM push notifications
+            $fcmService = app(FcmService::class);
+            if ($fcmService->isEnabled()) {
+                $fcmResult = $fcmService->sendToDisasterVolunteers(
+                    disasterId: $id,
+                    title: 'New Disaster Aid Report',
+                    body: "A new aid report has been added to {$disaster->title}",
+                    data: [
+                        'type' => 'new_disaster_aid_report',
+                        'disaster_id' => $disaster->id,
+                        'aid_id' => $aid->id,
+                        'disaster_title' => $disaster->title,
+                        'aid_title' => $aid->title,
+                        'category' => $aid->category->value,
+                    ],
+                    excludeUserId: $user->id
+                );
+
+                if (!$fcmResult['success']) {
+                    Log::warning('FCM notification failed for disaster aid', [
+                        'disaster_id' => $id,
+                        'aid_id' => $aid->id,
+                        'error' => $fcmResult['message'] ?? 'Unknown error'
+                    ]);
+                }
+            } else {
+                Log::info('FCM service is not enabled. Database notifications created but push notifications skipped.');
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::error('Failed to send notifications for disaster aid', [
+                'disaster_id' => $id,
+                'aid_id' => $aid->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
 
         return response()->json([
             'message' => 'Disaster aid created successfully.',

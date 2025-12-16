@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserDevice;
 use App\Models\Picture;
 use App\Enums\UserTypeEnum;
 use App\Enums\UserStatusEnum;
@@ -19,14 +20,19 @@ class AuthController extends Controller
      * @OA\Post(
      *     path="/auth/login",
      *     summary="User login",
-     *     description="Authenticate user and return access token",
+     *     description="Authenticate user and return access token. Optionally store FCM token for push notifications.",
      *     tags={"Authentication"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"email","password"},
      *             @OA\Property(property="email", type="string", format="email", example="fathur@edisaster.test"),
-     *             @OA\Property(property="password", type="string", format="password", example="password", minLength=6)
+     *             @OA\Property(property="password", type="string", format="password", example="password", minLength=6),
+     *             @OA\Property(property="fcm_token", type="string", description="Firebase Cloud Messaging token for push notifications", example="dK3jH8f9L2mN4pQ5rS6tU7vW8xY9zA0bC1dE2fG3hI4jK5lM6nO7pQ8rS9tU0vW1xY2zA3bC4dE5f"),
+     *             @OA\Property(property="platform", type="string", enum={"android","ios","web"}, description="Device platform", example="android"),
+     *             @OA\Property(property="device_id", type="string", maxLength=100, description="Optional device identifier", example="device_12345"),
+     *             @OA\Property(property="device_name", type="string", maxLength=100, description="Optional device name", example="Samsung Galaxy S21"),
+     *             @OA\Property(property="app_version", type="string", maxLength=20, description="Optional app version", example="1.0.0")
      *         )
      *     ),
      *     @OA\Response(
@@ -73,6 +79,11 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string|min:6',
+            'fcm_token' => 'nullable|string|max:255',
+            'platform' => 'nullable|in:android,ios,web',
+            'device_id' => 'nullable|string|max:100',
+            'device_name' => 'nullable|string|max:100',
+            'app_version' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -95,6 +106,24 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Account is not active. Please contact administrator.'
             ], 403);
+        }
+
+        // Store or update FCM token if provided
+        if ($request->has('fcm_token') && !empty($request->fcm_token)) {
+            $platform = $request->input('platform', 'android');
+            
+            UserDevice::updateOrCreate(
+                ['fcm_token' => $request->fcm_token],
+                [
+                    'user_id' => $user->id,
+                    'platform' => $platform,
+                    'device_id' => $request->input('device_id'),
+                    'device_name' => $request->input('device_name'),
+                    'app_version' => $request->input('app_version'),
+                    'is_active' => true,
+                    'last_used_at' => now(),
+                ]
+            );
         }
 
         // Create token
@@ -222,9 +251,15 @@ class AuthController extends Controller
      * @OA\Post(
      *     path="/auth/logout",
      *     summary="User logout",
-     *     description="Logout user and invalidate access token",
+     *     description="Logout user and invalidate access token. Optionally delete FCM token to stop receiving push notifications.",
      *     tags={"Authentication"},
      *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="fcm_token", type="string", description="FCM token to delete from user devices", example="dK3jH8f9L2mN4pQ5rS6tU7vW8xY9zA0bC1dE2fG3hI4jK5lM6nO7pQ8rS9tU0vW1xY2zA3bC4dE5f")
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Logout successful",
@@ -243,7 +278,16 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        auth('sanctum')->user()->currentAccessToken()->delete();
+        $user = auth('sanctum')->user();
+        
+        // Delete FCM token if provided
+        if ($request->has('fcm_token') && !empty($request->fcm_token)) {
+            UserDevice::where('fcm_token', $request->fcm_token)
+                ->where('user_id', $user->id)
+                ->delete();
+        }
+
+        $user->currentAccessToken()->delete();
 
         return response()->json([
             'message' => 'Logged out successfully'

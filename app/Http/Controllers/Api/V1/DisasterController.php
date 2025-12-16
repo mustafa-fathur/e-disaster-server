@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Enums\PictureTypeEnum;
+use App\Enums\NotificationTypeEnum;
 use App\Models\Disaster;
 use App\Models\DisasterReport;
 use App\Models\DisasterVictim;
@@ -14,8 +15,10 @@ use App\Models\Picture;
 use App\Enums\DisasterTypeEnum;
 use App\Enums\DisasterStatusEnum;
 use App\Enums\DisasterSourceEnum;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class DisasterController extends Controller
@@ -548,7 +551,7 @@ class DisasterController extends Controller
      * @OA\Post(
      *     path="/disasters",
      *     summary="Create new disaster",
-     *     description="Create a new disaster and automatically assign creator as volunteer",
+     *     description="Create a new disaster and automatically assign creator as volunteer. After successful creation, database notifications and FCM push notifications will be sent to all active officers and volunteers (except the creator).",
      *     tags={"Disasters"},
      *     security={{"bearerAuth":{}}},
     *     @OA\RequestBody(
@@ -735,6 +738,61 @@ class DisasterController extends Controller
             }
         }
 
+        // Send notifications for new disaster to all active users (officers and volunteers)
+        try {
+            // Get all active officers and volunteers (except creator)
+            $activeUsers = \App\Models\User::where('status', \App\Enums\UserStatusEnum::ACTIVE)
+                ->whereIn('type', [\App\Enums\UserTypeEnum::OFFICER, \App\Enums\UserTypeEnum::VOLUNTEER])
+                ->where('id', '!=', $user->id)
+                ->get();
+
+            // Create database notifications
+            foreach ($activeUsers as $activeUser) {
+                Notification::create([
+                    'user_id' => $activeUser->id,
+                    'title' => 'New Disaster Alert',
+                    'message' => "A new disaster has been reported: {$disaster->title}",
+                    'category' => NotificationTypeEnum::NEW_DISASTER,
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
+
+            // Send FCM push notifications
+            $fcmService = app(FcmService::class);
+            if ($fcmService->isEnabled()) {
+                $userIds = $activeUsers->pluck('id')->toArray();
+                $fcmResult = $fcmService->sendToUsers(
+                    userIds: $userIds,
+                    title: 'New Disaster Alert',
+                    body: "A new disaster has been reported: {$disaster->title}",
+                    data: [
+                        'type' => 'new_disaster',
+                        'disaster_id' => $disaster->id,
+                        'disaster_title' => $disaster->title,
+                        'disaster_type' => $disaster->types->value,
+                        'location' => $disaster->location,
+                    ]
+                );
+
+                if (!$fcmResult['success']) {
+                    Log::warning('FCM notification failed for new disaster', [
+                        'disaster_id' => $disaster->id,
+                        'error' => $fcmResult['message'] ?? 'Unknown error'
+                    ]);
+                }
+            } else {
+                Log::info('FCM service is not enabled. Database notifications created but push notifications skipped.');
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::error('Failed to send notifications for new disaster', [
+                'disaster_id' => $disaster->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
         return response()->json([
             'message' => 'Disaster created successfully. You have been automatically assigned as a volunteer.',
             'data' => [
@@ -911,7 +969,7 @@ class DisasterController extends Controller
      * @OA\Put(
      *     path="/disasters/{id}/cancel",
      *     summary="Cancel disaster",
-     *     description="Cancel a specific disaster with reason (assigned users only)",
+     *     description="Cancel a specific disaster with reason (assigned users only). After cancellation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator).",
      *     tags={"Disasters"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -1013,6 +1071,59 @@ class DisasterController extends Controller
             'cancelled_at' => now(),
             'cancelled_by' => $disasterVolunteer->id
         ]);
+
+        // Send notifications to all assigned volunteers about status change
+        try {
+            $assignedVolunteers = DisasterVolunteer::where('disaster_id', $id)
+                ->where('user_id', '!=', $user->id)
+                ->with('user')
+                ->get();
+
+            // Create database notifications
+            foreach ($assignedVolunteers as $volunteer) {
+                Notification::create([
+                    'user_id' => $volunteer->user_id,
+                    'title' => 'Disaster Status Changed',
+                    'message' => "Disaster '{$disaster->title}' has been cancelled. Reason: {$request->cancelled_reason}",
+                    'category' => NotificationTypeEnum::DISASTER_STATUS_CHANGED,
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
+
+            // Send FCM push notifications
+            $fcmService = app(FcmService::class);
+            if ($fcmService->isEnabled()) {
+                $fcmResult = $fcmService->sendToDisasterVolunteers(
+                    disasterId: $id,
+                    title: 'Disaster Status Changed',
+                    body: "Disaster '{$disaster->title}' has been cancelled",
+                    data: [
+                        'type' => 'disaster_status_changed',
+                        'disaster_id' => $disaster->id,
+                        'disaster_title' => $disaster->title,
+                        'status' => 'cancelled',
+                        'reason' => $request->cancelled_reason,
+                    ],
+                    excludeUserId: $user->id
+                );
+
+                if (!$fcmResult['success']) {
+                    Log::warning('FCM notification failed for disaster status change', [
+                        'disaster_id' => $id,
+                        'error' => $fcmResult['message'] ?? 'Unknown error'
+                    ]);
+                }
+            } else {
+                Log::info('FCM service is not enabled. Database notifications created but push notifications skipped.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send notifications for disaster status change', [
+                'disaster_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
 
         return response()->json([
             'message' => 'Disaster cancelled successfully.',

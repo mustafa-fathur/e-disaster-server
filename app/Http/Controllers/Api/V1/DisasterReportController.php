@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Enums\PictureTypeEnum;
+use App\Enums\NotificationTypeEnum;
 use App\Models\Disaster;
 use App\Models\DisasterReport;
 use App\Models\DisasterVolunteer;
+use App\Models\Notification;
 use App\Models\Picture;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class DisasterReportController extends Controller
@@ -148,7 +152,7 @@ class DisasterReportController extends Controller
      * @OA\Post(
      *     path="/disasters/{id}/reports",
      *     summary="Create disaster report",
-     *     description="Create a new report for a specific disaster (assigned users only)",
+     *     description="Create a new report for a specific disaster (assigned users only). After successful creation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator). If marked as final stage, the disaster will be completed and status change notifications will also be sent.",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -278,6 +282,61 @@ class DisasterReportController extends Controller
             }
         }
 
+        // Send notifications to all assigned volunteers (except creator) about new report
+        try {
+            $assignedVolunteers = DisasterVolunteer::where('disaster_id', $id)
+                ->where('user_id', '!=', $user->id)
+                ->with('user')
+                ->get();
+
+            // Create database notifications
+            foreach ($assignedVolunteers as $volunteer) {
+                Notification::create([
+                    'user_id' => $volunteer->user_id,
+                    'title' => 'New Disaster Report',
+                    'message' => "A new report has been added to {$disaster->title}: {$report->title}",
+                    'category' => NotificationTypeEnum::NEW_DISASTER_REPORT,
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
+
+            // Send FCM push notifications
+            $fcmService = app(FcmService::class);
+            if ($fcmService->isEnabled()) {
+                $fcmResult = $fcmService->sendToDisasterVolunteers(
+                    disasterId: $id,
+                    title: 'New Disaster Report',
+                    body: "A new report has been added to {$disaster->title}",
+                    data: [
+                        'type' => 'new_disaster_report',
+                        'disaster_id' => $disaster->id,
+                        'report_id' => $report->id,
+                        'disaster_title' => $disaster->title,
+                        'report_title' => $report->title,
+                    ],
+                    excludeUserId: $user->id
+                );
+
+                if (!$fcmResult['success']) {
+                    Log::warning('FCM notification failed for disaster report', [
+                        'disaster_id' => $id,
+                        'report_id' => $report->id,
+                        'error' => $fcmResult['message'] ?? 'Unknown error'
+                    ]);
+                }
+            } else {
+                Log::info('FCM service is not enabled. Database notifications created but push notifications skipped.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send notifications for disaster report', [
+                'disaster_id' => $id,
+                'report_id' => $report->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
         // If this is a final stage report, update disaster status to completed
         if ($request->is_final_stage) {
             $disaster->update([
@@ -285,6 +344,56 @@ class DisasterReportController extends Controller
                 'completed_at' => now(),
                 'completed_by' => $disasterVolunteer->id
             ]);
+
+            // Send notifications about disaster completion
+            try {
+                $assignedVolunteers = DisasterVolunteer::where('disaster_id', $id)
+                    ->where('user_id', '!=', $user->id)
+                    ->with('user')
+                    ->get();
+
+                // Create database notifications for status change
+                foreach ($assignedVolunteers as $volunteer) {
+                    Notification::create([
+                        'user_id' => $volunteer->user_id,
+                        'title' => 'Disaster Status Changed',
+                        'message' => "Disaster '{$disaster->title}' has been marked as completed",
+                        'category' => NotificationTypeEnum::DISASTER_STATUS_CHANGED,
+                        'is_read' => false,
+                        'sent_at' => now(),
+                    ]);
+                }
+
+                // Send FCM push notifications for status change
+                $fcmService = app(FcmService::class);
+                if ($fcmService->isEnabled()) {
+                    $fcmResult = $fcmService->sendToDisasterVolunteers(
+                        disasterId: $id,
+                        title: 'Disaster Status Changed',
+                        body: "Disaster '{$disaster->title}' has been marked as completed",
+                        data: [
+                            'type' => 'disaster_status_changed',
+                            'disaster_id' => $disaster->id,
+                            'disaster_title' => $disaster->title,
+                            'status' => 'completed',
+                        ],
+                        excludeUserId: $user->id
+                    );
+
+                    if (!$fcmResult['success']) {
+                        Log::warning('FCM notification failed for disaster completion', [
+                            'disaster_id' => $id,
+                            'error' => $fcmResult['message'] ?? 'Unknown error'
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send notifications for disaster completion', [
+                    'disaster_id' => $id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         }
 
         return response()->json([
@@ -430,7 +539,7 @@ class DisasterReportController extends Controller
      * @OA\Put(
      *     path="/disasters/{id}/reports/{reportId}",
      *     summary="Update disaster report",
-     *     description="Update a specific disaster report (assigned users only)",
+     *     description="Update a specific disaster report (assigned users only). If the report is updated to final stage, the disaster will be completed and status change notifications will be sent to all volunteers assigned to this disaster (except the creator).",
      *     tags={"Reports"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -538,6 +647,56 @@ class DisasterReportController extends Controller
                 'completed_at' => now(),
                 'completed_by' => $disasterVolunteer->id
             ]);
+
+            // Send notifications about disaster completion
+            try {
+                $assignedVolunteers = DisasterVolunteer::where('disaster_id', $id)
+                    ->where('user_id', '!=', $user->id)
+                    ->with('user')
+                    ->get();
+
+                // Create database notifications for status change
+                foreach ($assignedVolunteers as $volunteer) {
+                    Notification::create([
+                        'user_id' => $volunteer->user_id,
+                        'title' => 'Disaster Status Changed',
+                        'message' => "Disaster '{$disaster->title}' has been marked as completed",
+                        'category' => NotificationTypeEnum::DISASTER_STATUS_CHANGED,
+                        'is_read' => false,
+                        'sent_at' => now(),
+                    ]);
+                }
+
+                // Send FCM push notifications for status change
+                $fcmService = app(FcmService::class);
+                if ($fcmService->isEnabled()) {
+                    $fcmResult = $fcmService->sendToDisasterVolunteers(
+                        disasterId: $id,
+                        title: 'Disaster Status Changed',
+                        body: "Disaster '{$disaster->title}' has been marked as completed",
+                        data: [
+                            'type' => 'disaster_status_changed',
+                            'disaster_id' => $disaster->id,
+                            'disaster_title' => $disaster->title,
+                            'status' => 'completed',
+                        ],
+                        excludeUserId: $user->id
+                    );
+
+                    if (!$fcmResult['success']) {
+                        Log::warning('FCM notification failed for disaster completion', [
+                            'disaster_id' => $id,
+                            'error' => $fcmResult['message'] ?? 'Unknown error'
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send notifications for disaster completion', [
+                    'disaster_id' => $id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         }
 
         return response()->json([

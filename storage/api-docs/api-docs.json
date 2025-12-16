@@ -3313,6 +3313,12 @@
                                                 "id": {
                                                     "type": "string"
                                                 },
+                                                "disaster_id": {
+                                                    "type": "string"
+                                                },
+                                                "disaster_title": {
+                                                    "type": "string"
+                                                },
                                                 "title": {
                                                     "type": "string"
                                                 },
@@ -3333,6 +3339,12 @@
                                                     "format": "float",
                                                     "example": 106.8456,
                                                     "nullable": true
+                                                },
+                                                "reported_by": {
+                                                    "type": "string"
+                                                },
+                                                "reporter_name": {
+                                                    "type": "string"
                                                 },
                                                 "pictures": {
                                                     "type": "array",

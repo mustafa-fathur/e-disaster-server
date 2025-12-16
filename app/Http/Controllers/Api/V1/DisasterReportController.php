@@ -118,6 +118,8 @@ class DisasterReportController extends Controller
                 'disaster_title' => $report->disaster->title,
                 'title' => $report->title,
                 'description' => $report->description,
+                'lat' => $report->lat,
+                'long' => $report->long,
                 'is_final_stage' => $report->is_final_stage,
                 'reported_by' => $report->reported_by,
                 'reporter_name' => $report->reporter->user->name ?? 'Unknown',
@@ -221,6 +223,8 @@ class DisasterReportController extends Controller
             'title' => 'required|string|max:45',
             'description' => 'required|string',
             'is_final_stage' => 'nullable|boolean',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'long' => 'nullable|numeric|between:-180,180',
             'images' => 'nullable|array',
             'images.*' => 'file|image|max:2048',
             'caption' => 'nullable|string|max:255',
@@ -251,6 +255,8 @@ class DisasterReportController extends Controller
             'disaster_id' => $id,
             'title' => $request->title,
             'description' => $request->description,
+            'lat' => $request->lat,
+            'long' => $request->long,
             'is_final_stage' => $request->is_final_stage ?? false,
             'reported_by' => $disasterVolunteer->id, // Reference to disaster_volunteers table
         ]);
@@ -288,8 +294,11 @@ class DisasterReportController extends Controller
                 'disaster_id' => $report->disaster_id,
                 'title' => $report->title,
                 'description' => $report->description,
+                'lat' => $report->lat,
+                'long' => $report->long,
                 'is_final_stage' => $report->is_final_stage,
                 'reported_by' => $report->reported_by,
+                'reporter_name' => $report->reporter->user->name ?? 'Unknown',
                 'created_at' => $report->created_at->format('Y-m-d H:i:s'),
                 'images_attached' => $request->hasFile('images'),
             ]
@@ -326,11 +335,15 @@ class DisasterReportController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="string"),
+    *                 @OA\Property(property="disaster_id", type="string"),
+    *                 @OA\Property(property="disaster_title", type="string"),
      *                 @OA\Property(property="title", type="string"),
      *                 @OA\Property(property="description", type="string"),
     *                 @OA\Property(property="is_final_stage", type="boolean"),
     *                 @OA\Property(property="lat", type="number", format="float", nullable=true, example=-6.2088),
     *                 @OA\Property(property="long", type="number", format="float", nullable=true, example=106.8456),
+    *                 @OA\Property(property="reported_by", type="string"),
+    *                 @OA\Property(property="reporter_name", type="string"),
      *                 @OA\Property(property="pictures", type="array", @OA\Items(type="object")),
      *                 @OA\Property(property="created_at", type="string", format="date-time"),
      *                 @OA\Property(property="updated_at", type="string", format="date-time")
@@ -398,6 +411,8 @@ class DisasterReportController extends Controller
                 'disaster_title' => $report->disaster->title,
                 'title' => $report->title,
                 'description' => $report->description,
+                'lat' => $report->lat,
+                'long' => $report->long,
                 'is_final_stage' => $report->is_final_stage,
                 'reported_by' => $report->reported_by,
                 'reporter_name' => $report->reporter->user->name ?? 'Unknown',
@@ -490,6 +505,8 @@ class DisasterReportController extends Controller
             'title' => 'sometimes|required|string|max:45',
             'description' => 'sometimes|required|string',
             'is_final_stage' => 'nullable|boolean',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'long' => 'nullable|numeric|between:-180,180',
         ]);
 
         if ($validator->fails()) {
@@ -511,7 +528,7 @@ class DisasterReportController extends Controller
             ], 403);
         }
 
-        $updateData = $request->only(['title', 'description', 'is_final_stage']);
+        $updateData = $request->only(['title', 'description', 'is_final_stage', 'lat', 'long']);
         $report->update($updateData);
 
         // If this is a final stage report, update disaster status to completed
@@ -530,7 +547,10 @@ class DisasterReportController extends Controller
                 'disaster_id' => $report->disaster_id,
                 'title' => $report->title,
                 'description' => $report->description,
+                'lat' => $report->lat,
+                'long' => $report->long,
                 'is_final_stage' => $report->is_final_stage,
+                'reported_by' => $report->reported_by,
                 'updated_at' => $report->updated_at->format('Y-m-d H:i:s'),
             ]
         ], 200);

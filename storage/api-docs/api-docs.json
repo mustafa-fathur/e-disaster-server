@@ -1111,6 +1111,14 @@
                                     "description": {
                                         "type": "string",
                                         "example": "Ready-to-eat meals for disaster victims"
+                                    },
+                                    "donator": {
+                                        "type": "string",
+                                        "example": "ABC Foundation"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "Kelurahan Sukamaju, RW 05"
                                     }
                                 },
                                 "type": "object"
@@ -1249,6 +1257,12 @@
                                                     "type": "string"
                                                 },
                                                 "description": {
+                                                    "type": "string"
+                                                },
+                                                "donator": {
+                                                    "type": "string"
+                                                },
+                                                "location": {
                                                     "type": "string"
                                                 },
                                                 "category": {
@@ -1392,6 +1406,14 @@
                                     "description": {
                                         "type": "string",
                                         "example": "Updated ready-to-eat meals for disaster victims"
+                                    },
+                                    "donator": {
+                                        "type": "string",
+                                        "example": "ABC Foundation"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "Kelurahan Sukamaju, RW 05"
                                     }
                                 },
                                 "type": "object"

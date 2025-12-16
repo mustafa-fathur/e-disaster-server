@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'firebase' => [
+        'credentials_path' => env('FIREBASE_CREDENTIALS_PATH', 'app/firebase-credentials.json'),
+    ],
+
 ];

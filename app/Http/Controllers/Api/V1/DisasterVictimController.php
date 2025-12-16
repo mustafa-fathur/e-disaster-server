@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Enums\PictureTypeEnum;
+use App\Enums\NotificationTypeEnum;
 use App\Models\Disaster;
 use App\Models\DisasterVictim;
 use App\Models\DisasterVolunteer;
+use App\Models\Notification;
 use App\Models\Picture;
 use App\Enums\DisasterVictimStatusEnum;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class DisasterVictimController extends Controller
@@ -127,7 +131,7 @@ class DisasterVictimController extends Controller
      * @OA\Post(
      *     path="/disasters/{id}/victims",
      *     summary="Create disaster victim record",
-     *     description="Create a new victim record for a specific disaster (assigned users only)",
+     *     description="Create a new victim record for a specific disaster (assigned users only). After successful creation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator).",
      *     tags={"Victims"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -298,6 +302,63 @@ class DisasterVictimController extends Controller
                 ]);
                 $imagesAttached++;
             }
+        }
+
+        // Send notifications to all assigned volunteers (except creator)
+        try {
+            // Get all volunteers assigned to this disaster (except creator)
+            $assignedVolunteers = DisasterVolunteer::where('disaster_id', $id)
+                ->where('user_id', '!=', $user->id)
+                ->with('user')
+                ->get();
+
+            // Create database notifications
+            foreach ($assignedVolunteers as $volunteer) {
+                Notification::create([
+                    'user_id' => $volunteer->user_id,
+                    'title' => 'Laporan Korban Baru',
+                    'message' => "Laporan korban baru telah ditambahkan ke {$disaster->title}. Korban: {$victim->name}",
+                    'category' => NotificationTypeEnum::NEW_DISASTER_VICTIM_REPORT,
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
+
+            // Send FCM push notifications
+            $fcmService = app(FcmService::class);
+            if ($fcmService->isEnabled()) {
+                $fcmResult = $fcmService->sendToDisasterVolunteers(
+                    disasterId: $id,
+                    title: 'Laporan Korban Baru',
+                    body: "Laporan korban baru telah ditambahkan ke {$disaster->title}",
+                    data: [
+                        'type' => 'new_disaster_victim_report',
+                        'disaster_id' => $disaster->id,
+                        'victim_id' => $victim->id,
+                        'disaster_title' => $disaster->title,
+                        'victim_name' => $victim->name,
+                    ],
+                    excludeUserId: $user->id
+                );
+
+                if (!$fcmResult['success']) {
+                    Log::warning('FCM notification failed for disaster victim', [
+                        'disaster_id' => $id,
+                        'victim_id' => $victim->id,
+                        'error' => $fcmResult['message'] ?? 'Unknown error'
+                    ]);
+                }
+            } else {
+                Log::info('FCM service is not enabled. Database notifications created but push notifications skipped.');
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            Log::error('Failed to send notifications for disaster victim', [
+                'disaster_id' => $id,
+                'victim_id' => $victim->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
 
         return response()->json([

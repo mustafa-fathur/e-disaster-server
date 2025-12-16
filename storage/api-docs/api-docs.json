@@ -25,7 +25,7 @@
                     "Authentication"
                 ],
                 "summary": "User login",
-                "description": "Authenticate user and return access token",
+                "description": "Authenticate user and return access token. Optionally store FCM token for push notifications.",
                 "operationId": "985cd5203e2d0a820e113f2f4fdb2847",
                 "requestBody": {
                     "required": true,
@@ -47,6 +47,39 @@
                                         "format": "password",
                                         "minLength": 6,
                                         "example": "password"
+                                    },
+                                    "fcm_token": {
+                                        "description": "Firebase Cloud Messaging token for push notifications",
+                                        "type": "string",
+                                        "example": "dK3jH8f9L2mN4pQ5rS6tU7vW8xY9zA0bC1dE2fG3hI4jK5lM6nO7pQ8rS9tU0vW1xY2zA3bC4dE5f"
+                                    },
+                                    "platform": {
+                                        "description": "Device platform",
+                                        "type": "string",
+                                        "enum": [
+                                            "android",
+                                            "ios",
+                                            "web"
+                                        ],
+                                        "example": "android"
+                                    },
+                                    "device_id": {
+                                        "description": "Optional device identifier",
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "device_12345"
+                                    },
+                                    "device_name": {
+                                        "description": "Optional device name",
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "Samsung Galaxy S21"
+                                    },
+                                    "app_version": {
+                                        "description": "Optional app version",
+                                        "type": "string",
+                                        "maxLength": 20,
+                                        "example": "1.0.0"
                                     }
                                 },
                                 "type": "object"
@@ -313,8 +346,25 @@
                     "Authentication"
                 ],
                 "summary": "User logout",
-                "description": "Logout user and invalidate access token",
+                "description": "Logout user and invalidate access token. Optionally delete FCM token to stop receiving push notifications.",
                 "operationId": "a05022a34eef599e04fb0a5254375b84",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "fcm_token": {
+                                        "description": "FCM token to delete from user devices",
+                                        "type": "string",
+                                        "example": "dK3jH8f9L2mN4pQ5rS6tU7vW8xY9zA0bC1dE2fG3hI4jK5lM6nO7pQ8rS9tU0vW1xY2zA3bC4dE5f"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Logout successful",
@@ -1061,7 +1111,7 @@
                     "Aids"
                 ],
                 "summary": "Create disaster aid record",
-                "description": "Create a new aid record for a specific disaster (assigned users only)",
+                "description": "Create a new aid record for a specific disaster (assigned users only). After successful creation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator).",
                 "operationId": "b55685db0bb06b0b57a79913aa985712",
                 "parameters": [
                     {
@@ -1867,7 +1917,7 @@
                     "Disasters"
                 ],
                 "summary": "Create new disaster",
-                "description": "Create a new disaster and automatically assign creator as volunteer",
+                "description": "Create a new disaster and automatically assign creator as volunteer. After successful creation, database notifications and FCM push notifications will be sent to all active officers and volunteers (except the creator).",
                 "operationId": "2a097c5e8b8502d04ded37d93355b64d",
                 "requestBody": {
                     "required": true,
@@ -2523,7 +2573,7 @@
                     "Disasters"
                 ],
                 "summary": "Cancel disaster",
-                "description": "Cancel a specific disaster with reason (assigned users only)",
+                "description": "Cancel a specific disaster with reason (assigned users only). After cancellation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator).",
                 "operationId": "a9f6381de5ed1d6eb8002bfabd003469",
                 "parameters": [
                     {
@@ -3135,7 +3185,7 @@
                     "Reports"
                 ],
                 "summary": "Create disaster report",
-                "description": "Create a new report for a specific disaster (assigned users only)",
+                "description": "Create a new report for a specific disaster (assigned users only). After successful creation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator). If marked as final stage, the disaster will be completed and status change notifications will also be sent.",
                 "operationId": "d5a72fe7a1ee8880d9d3d3f8267acb78",
                 "parameters": [
                     {
@@ -3435,7 +3485,7 @@
                     "Reports"
                 ],
                 "summary": "Update disaster report",
-                "description": "Update a specific disaster report (assigned users only)",
+                "description": "Update a specific disaster report (assigned users only). If the report is updated to final stage, the disaster will be completed and status change notifications will be sent to all volunteers assigned to this disaster (except the creator).",
                 "operationId": "8dd4b3992dea2614d707d50ef8651206",
                 "parameters": [
                     {
@@ -3772,7 +3822,7 @@
                     "Victims"
                 ],
                 "summary": "Create disaster victim record",
-                "description": "Create a new victim record for a specific disaster (assigned users only)",
+                "description": "Create a new victim record for a specific disaster (assigned users only). After successful creation, database notifications and FCM push notifications will be sent to all volunteers assigned to this disaster (except the creator).",
                 "operationId": "0ac8fafa70fb48967163cc6b8e949e9e",
                 "parameters": [
                     {

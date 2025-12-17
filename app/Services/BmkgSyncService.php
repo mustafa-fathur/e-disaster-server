@@ -5,9 +5,13 @@ namespace App\Services;
 use App\Models\Disaster;
 use App\Models\DisasterVolunteer;
 use App\Models\User;
+use App\Models\Notification;
 use App\Enums\DisasterTypeEnum;
 use App\Enums\DisasterStatusEnum;
 use App\Enums\DisasterSourceEnum;
+use App\Enums\NotificationTypeEnum;
+use App\Enums\UserStatusEnum;
+use App\Services\FcmService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -216,6 +220,9 @@ class BmkgSyncService
             // Assign system admin as volunteer for BMKG disasters (if admin exists)
             $this->assignSystemAdminToDisaster($disaster);
 
+            // Send notifications to all active users about new BMKG disaster
+            $this->sendBmkgDisasterNotifications($disaster);
+
             Log::info("Created disaster from BMKG data", [
                 'disaster_id' => $disaster->id,
                 'title' => $disaster->title,
@@ -325,6 +332,78 @@ class BmkgSyncService
             Log::warning("Failed to assign admin to BMKG disaster", [
                 'disaster_id' => $disaster->id,
                 'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send notifications to all active users about new BMKG disaster
+     */
+    private function sendBmkgDisasterNotifications(Disaster $disaster): void
+    {
+        try {
+            // Get all active users (BMKG disasters are available to everyone)
+            $activeUsers = User::where('status', UserStatusEnum::ACTIVE)->get();
+
+            if ($activeUsers->isEmpty()) {
+                Log::info('No active users found for BMKG disaster notification', [
+                    'disaster_id' => $disaster->id
+                ]);
+                return;
+            }
+
+            // Create database notifications
+            foreach ($activeUsers as $user) {
+                Notification::create([
+                    'user_id' => $user->id,
+                    'title' => 'Bencana Baru dari BMKG',
+                    'message' => "Gempa bumi baru terdeteksi: {$disaster->title}",
+                    'category' => NotificationTypeEnum::NEW_DISASTER,
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
+
+            // Send FCM push notifications
+            $fcmService = app(FcmService::class);
+            if ($fcmService->isEnabled()) {
+                $userIds = $activeUsers->pluck('id')->toArray();
+                $fcmResult = $fcmService->sendToUsers(
+                    userIds: $userIds,
+                    title: 'Bencana Baru dari BMKG',
+                    body: "Gempa bumi baru terdeteksi: {$disaster->title}",
+                    data: [
+                        'type' => 'new_disaster',
+                        'disaster_id' => $disaster->id,
+                        'disaster_title' => $disaster->title,
+                        'disaster_type' => $disaster->types->value,
+                        'location' => $disaster->location,
+                        'magnitude' => $disaster->magnitude,
+                        'source' => 'bmkg',
+                    ]
+                );
+
+                if (!$fcmResult['success']) {
+                    Log::warning('FCM notification failed for BMKG disaster', [
+                        'disaster_id' => $disaster->id,
+                        'error' => $fcmResult['message'] ?? 'Unknown error'
+                    ]);
+                } else {
+                    Log::info('FCM notifications sent for BMKG disaster', [
+                        'disaster_id' => $disaster->id,
+                        'users_notified' => count($userIds),
+                        'sent' => $fcmResult['sent'] ?? 0
+                    ]);
+                }
+            } else {
+                Log::info('FCM service is not enabled. Database notifications created but push notifications skipped for BMKG disaster.');
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the disaster creation
+            Log::error('Failed to send notifications for BMKG disaster', [
+                'disaster_id' => $disaster->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }

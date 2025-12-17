@@ -250,8 +250,8 @@ class DisasterAidController extends Controller
             foreach ($assignedVolunteers as $volunteer) {
                 Notification::create([
                     'user_id' => $volunteer->user_id,
-                    'title' => 'New Disaster Aid Report',
-                    'message' => "A new aid report has been added to {$disaster->title}: {$aid->title}",
+                    'title' => 'Laporan Bantuan Bencana Baru',
+                    'message' => "Laporan bantuan bencana baru telah ditambahkan ke {$disaster->title}: {$aid->title}",
                     'category' => NotificationTypeEnum::NEW_DISASTER_AID_REPORT,
                     'is_read' => false,
                     'sent_at' => now(),
@@ -263,8 +263,8 @@ class DisasterAidController extends Controller
             if ($fcmService->isEnabled()) {
                 $fcmResult = $fcmService->sendToDisasterVolunteers(
                     disasterId: $id,
-                    title: 'New Disaster Aid Report',
-                    body: "A new aid report has been added to {$disaster->title}",
+                    title: 'Laporan Bantuan Bencana Baru',
+                    body: "Laporan bantuan bencana baru telah ditambahkan ke {$disaster->title}",
                     data: [
                         'type' => 'new_disaster_aid_report',
                         'disaster_id' => $disaster->id,

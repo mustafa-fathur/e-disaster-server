@@ -750,8 +750,8 @@ class DisasterController extends Controller
             foreach ($activeUsers as $activeUser) {
                 Notification::create([
                     'user_id' => $activeUser->id,
-                    'title' => 'New Disaster Alert',
-                    'message' => "A new disaster has been reported: {$disaster->title}",
+                    'title' => 'Bencana Baru',
+                    'message' => "Bencana baru telah dilaporkan: {$disaster->title}",
                     'category' => NotificationTypeEnum::NEW_DISASTER,
                     'is_read' => false,
                     'sent_at' => now(),
@@ -764,8 +764,8 @@ class DisasterController extends Controller
                 $userIds = $activeUsers->pluck('id')->toArray();
                 $fcmResult = $fcmService->sendToUsers(
                     userIds: $userIds,
-                    title: 'New Disaster Alert',
-                    body: "A new disaster has been reported: {$disaster->title}",
+                    title: 'Bencana Baru',
+                    body: "Bencana baru telah dilaporkan: {$disaster->title}",
                     data: [
                         'type' => 'new_disaster',
                         'disaster_id' => $disaster->id,

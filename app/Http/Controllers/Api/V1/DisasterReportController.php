@@ -293,8 +293,8 @@ class DisasterReportController extends Controller
             foreach ($assignedVolunteers as $volunteer) {
                 Notification::create([
                     'user_id' => $volunteer->user_id,
-                    'title' => 'New Disaster Report',
-                    'message' => "A new report has been added to {$disaster->title}: {$report->title}",
+                    'title' => 'Laporan Bencana Baru',
+                    'message' => "Laporan bencana baru telah ditambahkan ke {$disaster->title}: {$report->title}",
                     'category' => NotificationTypeEnum::NEW_DISASTER_REPORT,
                     'is_read' => false,
                     'sent_at' => now(),
@@ -306,8 +306,8 @@ class DisasterReportController extends Controller
             if ($fcmService->isEnabled()) {
                 $fcmResult = $fcmService->sendToDisasterVolunteers(
                     disasterId: $id,
-                    title: 'New Disaster Report',
-                    body: "A new report has been added to {$disaster->title}",
+                    title: 'Laporan Bencana Baru',
+                    body: "Laporan bencana baru telah ditambahkan ke {$disaster->title}",
                     data: [
                         'type' => 'new_disaster_report',
                         'disaster_id' => $disaster->id,
